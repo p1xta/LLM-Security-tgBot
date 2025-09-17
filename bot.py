@@ -10,7 +10,19 @@ from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
+load_dotenv()
 
+S3_ENDPOINT = os.getenv()
+S3_ACCESS_KEY = os.getenv()
+S3_SECRET_KEY = os.getenv()
+S3_BUCKET = os.getenv()
+S3_PREFIX = os.getenv()
+
+SERVICE_ACCOUNT_ID = os.getenv()
+KEY_ID = os.getenv()
+PRIVATE_KEY = os.getenv()
+FOLDER_ID = os.getenv()
+TELEGRAM_TOKEN = os.getenv()
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',

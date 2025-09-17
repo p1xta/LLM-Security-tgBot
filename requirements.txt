@@ -1,0 +1,4 @@
+requests
+python-dotenv
+pyjwt
+python-telegram-bot>=20.0
