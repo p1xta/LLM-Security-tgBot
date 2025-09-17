@@ -1,14 +1,19 @@
 import logging
-import requests
-import time
 import os
-
 import re
-import jwt
-from dotenv import load_dotenv
+import time
 
+import jwt
+import requests
+from dotenv import load_dotenv
 from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    ContextTypes,
+    MessageHandler,
+    filters,
+)
 
 load_dotenv()
 
@@ -25,8 +30,8 @@ FOLDER_ID = os.getenv("FOLDER_ID")
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO,
 )
 logger = logging.getLogger(__name__)
 
@@ -44,31 +49,33 @@ class YandexGPTBot:
         try:
             now = int(time.time())
             payload = {
-                'aud': 'https://iam.api.cloud.yandex.net/iam/v1/tokens',
-                'iss': SERVICE_ACCOUNT_ID,
-                'iat': now,
-                'exp': now + 3600
+                "aud": "https://iam.api.cloud.yandex.net/iam/v1/tokens",
+                "iss": SERVICE_ACCOUNT_ID,
+                "iat": now,
+                "exp": now + 3600,
             }
 
             encoded_token = jwt.encode(
                 payload,
                 PRIVATE_KEY,
-                algorithm='PS256',
-                headers={'kid': KEY_ID}
+                algorithm="PS256",
+                headers={"kid": KEY_ID},
             )
 
             response = requests.post(
-                'https://iam.api.cloud.yandex.net/iam/v1/tokens', # save this
-                json={'jwt': encoded_token},
-                timeout=10
+                "https://iam.api.cloud.yandex.net/iam/v1/tokens",  # save this
+                json={"jwt": encoded_token},
+                timeout=10,
             )
 
             if response.status_code != 200:
                 raise Exception(f"Ошибка генерации токена: {response.text}")
 
             token_data = response.json()
-            self.iam_token = token_data['iamToken']
-            self.token_expires = now + 3500  # На 100 секунд меньше срока действия
+            self.iam_token = token_data["iamToken"]
+            self.token_expires = (
+                now + 3500
+            )  # На 100 секунд меньше срока действия
 
             logger.info("IAM token generated successfully")
             return self.iam_token
@@ -83,9 +90,9 @@ class YandexGPTBot:
             iam_token = self.get_iam_token()
 
             headers = {
-                'Content-Type': 'application/json',
-                'Authorization': f'Bearer {iam_token}',
-                'x-folder-id': FOLDER_ID
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {iam_token}",
+                "x-folder-id": FOLDER_ID,
             }
 
             data = {
@@ -93,28 +100,25 @@ class YandexGPTBot:
                 "completionOptions": {
                     "stream": False,
                     "temperature": 0.6,
-                    "maxTokens": 2000
+                    "maxTokens": 2000,
                 },
-                "messages": [
-                    {
-                        "role": "user",
-                        "text": question
-                    }
-                ]
+                "messages": [{"role": "user", "text": question}],
             }
 
             response = requests.post(
-                'https://llm.api.cloud.yandex.net/foundationModels/v1/completion', # save this
+                "https://llm.api.cloud.yandex.net/foundationModels/v1/completion",  # save this
                 headers=headers,
                 json=data,
-                timeout=30
+                timeout=30,
             )
 
             if response.status_code != 200:
                 logger.error(f"Yandex GPT API error: {response.text}")
                 raise Exception(f"Ошибка API: {response.status_code}")
 
-            return response.json()['result']['alternatives'][0]['message']['text']
+            return response.json()["result"]["alternatives"][0]["message"][
+                "text"
+            ]
 
         except Exception as e:
             logger.error(f"Error in ask_gpt: {str(e)}")
@@ -130,6 +134,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "Привет! Я бот для работы с Yandex GPT. Просто напиши мне свой вопрос"
     )
+
 
 patterns = {
     "prompt_injection": [
@@ -149,8 +154,9 @@ patterns = {
         r"(?i)(обойди|обход|bypass|обмани|фильтр|модерац)",
         r"(\bне\s+проверяй\b|\bignore\s+filter\b)",
         r"(\\x[0-9a-fA-F]|урл|кодировк|base64)",
-    ]
+    ],
 }
+
 
 def check_fraud(text):
     alerts = []
@@ -165,15 +171,17 @@ def check_fraud(text):
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработка текстовых сообщений"""
     user_message = update.message.text
-    
+
     print(user_message)
 
     alerts = check_fraud(user_message)
-    
+
     for alert in alerts:
-        print(f"\n\nERROR: {update.effective_user.id} TRIED TO FRAUD THE MODEL\ntype: {alert[0]}\nmessage: {user_message}\n\n")
+        print(
+            f"\n\nERROR: {update.effective_user.id} TRIED TO FRAUD THE MODEL\ntype: {alert[0]}\nmessage: {user_message}\n\n"
+        )
         raise Exception("Somebody tried to fraud the model")
-        
+
     if not user_message.strip():
         await update.message.reply_text("Пожалуйста, введите вопрос")
         return
@@ -181,8 +189,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         # Показываем статус "печатает"
         await context.bot.send_chat_action(
-            chat_id=update.effective_chat.id,
-            action="typing"
+            chat_id=update.effective_chat.id, action="typing"
         )
 
         response = yandex_bot.ask_gpt(user_message)
@@ -215,7 +222,9 @@ def main():
         application = Application.builder().token(TELEGRAM_TOKEN).build()
 
         application.add_handler(CommandHandler("start", start))
-        application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+        application.add_handler(
+            MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)
+        )
         application.add_error_handler(error_handler)
 
         logger.info("Бот запускается...")
