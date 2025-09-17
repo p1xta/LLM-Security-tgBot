@@ -12,17 +12,17 @@ from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandl
 
 load_dotenv()
 
-S3_ENDPOINT = os.getenv()
-S3_ACCESS_KEY = os.getenv()
-S3_SECRET_KEY = os.getenv()
-S3_BUCKET = os.getenv()
-S3_PREFIX = os.getenv()
+S3_ENDPOINT = os.getenv("S3_ENDPOINT")
+S3_ACCESS_KEY = os.getenv("S3_ACCESS_KEY")
+S3_SECRET_KEY = os.getenv("S3_SECRET_KEY")
+S3_BUCKET = os.getenv("S3_BUCKET")
+S3_PREFIX = os.getenv("S3_PREFIX")
 
-SERVICE_ACCOUNT_ID = os.getenv()
-KEY_ID = os.getenv()
-PRIVATE_KEY = os.getenv()
-FOLDER_ID = os.getenv()
-TELEGRAM_TOKEN = os.getenv()
+SERVICE_ACCOUNT_ID = os.getenv("SERVICE_ACCOUNT_ID")
+KEY_ID = os.getenv("KEY_ID")
+PRIVATE_KEY = os.getenv("PRIVATE_KEY")
+FOLDER_ID = os.getenv("FOLDER_ID")
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
