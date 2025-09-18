@@ -1,3 +1,5 @@
 .venv
 privat.pem
 .env
+.private_info
+.ruff_cache
