@@ -1,7 +1,6 @@
 import httpx
 from typing import Dict, Any
 from ..config.settings import get_settings
-from ..utils.retry import with_retry
 
 settings = get_settings()
 
@@ -10,7 +9,6 @@ class BaseClient:
         self.base_url = base_url
         self.timeout = settings.REQUEST_TIMEOUT
     
-    @with_retry(max_attempts=3, delay=1)
     async def _post(self, endpoint: str, data: Dict[str, Any]) -> Dict[str, Any]:
         async with httpx.AsyncClient() as client:
             response = await client.post(

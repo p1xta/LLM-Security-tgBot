@@ -6,12 +6,8 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     LOG_LEVEL: str = "INFO"
     REQUEST_TIMEOUT: int = 30
-    
-    # URL сервисов
-    VALIDATOR_URL: str = "http://localhost:8000"
-    RAG_URL: str = "http://localhost:8003"
-    LLM_URL: str = "http://localhost:8002"
-    
+    MODERATOR_URL: str = "http://localhost:8002"
+
     class Config:
         env_file = ".env"
 

@@ -30,17 +30,21 @@ class OrchestrationService:
         return await self.llm_client.generate(context)
     
     async def __call__(self, payload: dict):
-        
         # Валидация запроса
         await self.validate_request(payload)
         
+        
         # Получение контекста
-        context = await self.retrieve_context(payload)
+        #context = await self.retrieve_context(payload)
         
         # Генерация ответа
-        response = await self.generate_response(context)
+        response = await self.generate_response({"user_prompt": "Привет, как дела?", "system_prompt": "Отвечай строго"})
         
-        return response
+        return {
+                "status": "success",
+                "message": response['message'],
+                "original_request": payload
+            }
 
 # Создаем экземпляр сервиса для dependency injection
 orchestrate_processing = OrchestrationService()
