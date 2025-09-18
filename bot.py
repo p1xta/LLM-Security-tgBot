@@ -14,6 +14,9 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
+from s3_bridge import S3Bridge
+from faiss_bridge import FAISSbridge
+
 
 load_dotenv()
 
@@ -40,6 +43,14 @@ class YandexGPTBot:
     def __init__(self):
         self.iam_token = None
         self.token_expires = 0
+        self.s3 = S3Bridge(
+            's3',
+            endpoint_url=S3_ENDPOINT,
+            aws_access_key_id=S3_ACCESS_KEY,
+            aws_secret_access_key=S3_SECRET_KEY,
+            region_name='ru-central1'
+        )
+        self.faiss = FAISSbridge()
 
     def get_iam_token(self):
         """Получение IAM-токена (с кэшированием на 1 час)"""
@@ -94,6 +105,12 @@ class YandexGPTBot:
                 "Authorization": f"Bearer {iam_token}",
                 "x-folder-id": FOLDER_ID,
             }
+            
+            docs = self.s3.download_from_s3("tgbot-storage")
+            self.faiss.store_doc_vectors(docs)
+            retrieved_docs = self.faiss.find_relevant_data(question)
+
+            context_chunks = "\n\n".join([doc.page_content for doc in retrieved_docs])
 
             data = {
                 "modelUri": f"gpt://{FOLDER_ID}/yandexgpt-lite",
@@ -102,7 +119,19 @@ class YandexGPTBot:
                     "temperature": 0.6,
                     "maxTokens": 2000,
                 },
-                "messages": [{"role": "user", "text": question}],
+                "messages": [
+                    {
+                        "role": "system",
+                        "text": (
+                            "Ты — корпоративный ассистент. Отвечай строго по документам. "
+                            "Если информации нет — скажи 'В документах не указано'.\n\n"
+                            f"Контекст из документов:\n{context_chunks}"
+                        )
+                    },
+                    {
+                        "role": "user", 
+                        "text": question
+                    }],
             }
 
             response = requests.post(
