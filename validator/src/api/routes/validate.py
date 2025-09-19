@@ -42,9 +42,9 @@ async def process_request(request: ValidationRequest):
     for alert in alerts:
         print(f"\n\nERROR: {request.user_id} TRIED TO FRAUD THE MODEL\ntype: {alert[0]}\nmessage: {request.text}\n\n")
         return {"is_valid": False}
-    
+    print(request)
     response = await ModeratorClient().moderate(request.model_dump())
-    
+    print(response)
     if not response.get("is_valid", False):
         return {"is_valid": False}
     

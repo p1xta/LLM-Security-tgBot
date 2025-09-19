@@ -20,7 +20,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-
 class YandexGPTBot:
     def __init__(self):
         self.iam_token = None

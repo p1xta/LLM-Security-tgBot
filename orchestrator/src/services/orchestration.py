@@ -35,10 +35,21 @@ class OrchestrationService:
         
         
         # Получение контекста
-        #context = await self.retrieve_context(payload)
+        context = await self.retrieve_context({
+                "bucket": "tgbot-storage",
+                "query": payload['text']
+            })
         
+        chunks = context['chunks']
+        context_chunks = "\n\n".join(chunks)
         # Генерация ответа
-        response = await self.generate_response({"user_prompt": "Привет, как дела?", "system_prompt": "Отвечай строго"})
+        response = await self.generate_response({
+            "user_prompt": payload['text'], 
+            "system_prompt": "Ты — корпоративный ассистент. Отвечай строго по документам. "
+                            "Если информации нет — скажи 'В документах не указано'.\n\n"
+                            f"Контекст из документов:\n{context_chunks}"
+            }
+        )
         
         return {
                 "status": "success",
