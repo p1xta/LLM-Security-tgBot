@@ -14,7 +14,7 @@ async def retrieve_context(
     s3_service: S3Bridge = Depends(),
 ):
     try:
-        docs = s3_service.download_from_s3(req.bucket, req.folder)
+        docs = s3_service.download_from_s3(request.bucket, request.folder)
         if not docs:
             return RAGResponse(
                 message="Документы не найдены",
