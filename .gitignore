@@ -3,3 +3,4 @@ privat.pem
 .env
 .private_info
 .ruff_cache
+__pycache__
