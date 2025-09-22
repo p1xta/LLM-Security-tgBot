@@ -4,3 +4,5 @@ pydantic
 datetime
 fastapi
 pydantic_settings
+requests
+PyJWT==2.10.1

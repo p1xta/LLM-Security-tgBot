@@ -2,7 +2,7 @@
 
 REGISTRY_ID="crp4q1r2fo7v9m0j1vvh"
 SERVICE_ACCOUNT_ID="ajelb450lc8haab6f4u7"
-SERVICES=("orchestrator")
+SERVICES=("rag_service" "orchestrator" "tgbot_service" "validator" "yandexgpt_service")
 
 echo "Logging into Yandex Container Registry..."
 YC_TOKEN=$(yc iam create-token)
@@ -15,14 +15,16 @@ for service in "${SERVICES[@]}"; do
 
   docker build -t cr.yandex/$REGISTRY_ID/$service:latest .
   docker push cr.yandex/$REGISTRY_ID/$service:latest
+  
+  container_name="${service//_/-}"
+
+  yc serverless container create --name $container_name || true
 
   cd ..
-
-  yc serverless container create --name $service 2>/dev/null || true
-
+  
   echo "Deploying $service..."
   yc serverless container revision deploy \
-      --container-name $service \
+      --container-name $container_name \
       --image cr.yandex/$REGISTRY_ID/$service:latest \
       --service-account-id $SERVICE_ACCOUNT_ID \
       --cores 1 \

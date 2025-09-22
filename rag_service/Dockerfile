@@ -1,10 +1,8 @@
 FROM python:3.10-slim
 
-WORKDIR /src
+WORKDIR .
 
-RUN apt-get update && apt-get install -y \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y gcc && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
@@ -12,11 +10,4 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 COPY . .
 
-RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
-USER appuser
-
-EXPOSE 8001
-
-CMD ["uvicorn", "main:create_app", "--host", "0.0.0.0", "--port", "8001"]
-
-
+CMD ["python3", "src/main.py"]

@@ -9,7 +9,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, ContextTyp
 
 from config.settings import get_settings
 from utils.get_secrets import get_all_secrets_payload
-from src.log.logger import logger
+from log.logger import logger
 
 settings = get_settings()
 
