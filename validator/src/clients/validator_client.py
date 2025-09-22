@@ -8,4 +8,4 @@ class ModeratorClient(BaseClient):
         super().__init__(settings.MODERATOR_URL)
     
     async def moderate(self, payload: dict) -> dict:
-        return await self._post("/moderate", payload)
+        return await self._post("/moderate1", payload)
