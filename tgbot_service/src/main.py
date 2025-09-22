@@ -4,10 +4,11 @@ from http import HTTPStatus
 from fastapi import FastAPI, Request, Response
 from telegram import Update
 import httpx
+import uvicorn
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 
-from .config.settings import get_settings
-from .utils.get_secrets import get_all_secrets_payload
+from config.settings import get_settings
+from utils.get_secrets import get_all_secrets_payload
 
 settings = get_settings()
 
@@ -78,5 +79,7 @@ async def handle_message(update: Update, _: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(reply)
 
 
-bot_builder.add_handler(CommandHandler("start", start))
-bot_builder.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+if __name__ == "__main__":
+    bot_builder.add_handler(CommandHandler("start", start))
+    bot_builder.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    uvicorn.run(app, host="0.0.0.0", port=int(os.environ['PORT']))

@@ -1,8 +1,8 @@
 from fastapi import FastAPI
-from .api.routes import main_router as api_router
-from .config.settings import get_settings
+from api.routes import main_router as api_router
+from config.settings import get_settings
 from contextlib import asynccontextmanager
-from .utils.yandex_gpt import YandexGPTBot
+from utils.yandex_gpt import YandexGPTBot
 import os
 
 
@@ -42,4 +42,4 @@ def create_app() -> FastAPI:
 if __name__ == "__main__":
     import uvicorn
     app = create_app()
-    uvicorn.run(app, host="0.0.0.0", port=os.environ['PORT'])
+    uvicorn.run(app, host="0.0.0.0", port=int(os.environ['PORT']))

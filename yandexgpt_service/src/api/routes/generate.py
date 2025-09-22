@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Request
-from ..models.request import GenerationRequest
+from api.models.request import GenerationRequest
 
 def get_bot_from_request(request: Request):
     return request.app.state.yandex_bot
