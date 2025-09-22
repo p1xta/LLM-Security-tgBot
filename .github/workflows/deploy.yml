@@ -1,0 +1,33 @@
+name: Build and Push Images
+
+on:
+  push:
+    branches: [lockbox_secrets]
+
+env:
+  REGISTRY_ID: ${{ secrets.YC_REGISTRY_ID }}
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Login to Yandex Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: cr.yandex
+        username: iam
+        password: ${{ secrets.YC_OAUTH_TOKEN }}
+
+    - name: Build and push images
+      run: |
+        services=("rag_service" "orchestrator" "tgbot_service" "validator" "yandexgpt_service")
+        
+        for service in "${services[@]}"; do
+          echo "Building $service..."
+          docker build -t cr.yandex/$REGISTRY_ID/$services:latest .
+          docker push cr.yandex/$REGISTRY_ID/$services:latest
+        done
