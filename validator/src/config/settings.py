@@ -1,12 +1,14 @@
 from pydantic_settings import BaseSettings
 from functools import lru_cache
+import os
+
 
 class Settings(BaseSettings):
     # Настройки приложения
     DEBUG: bool = False
     LOG_LEVEL: str = "INFO"
     REQUEST_TIMEOUT: int = 30
-    MODERATOR_URL: str = "http://localhost:8002"
+    MODERATOR_URL: str = os.environ.get("LLM_URL", "localhost:8003")
 
     class Config:
         env_file = ".env"

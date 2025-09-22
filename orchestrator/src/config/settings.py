@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 from functools import lru_cache
+import os
 
 class Settings(BaseSettings):
     # Настройки приложения
@@ -8,9 +9,9 @@ class Settings(BaseSettings):
     REQUEST_TIMEOUT: int = 30
     
     # URL сервисов
-    VALIDATOR_URL: str = "http://localhost:8000"
-    RAG_URL: str = "http://localhost:8003"
-    LLM_URL: str = "http://localhost:8002"
+    VALIDATOR_URL: str = os.environ.get("VALIDATOR_URL", "http://localhost:8001")
+    RAG_URL: str = os.environ.get("RAG_URL", "http://localhost:8002")
+    LLM_URL: str = os.environ.get("LLM_URL", "http://localhost:8003")
     
     class Config:
         env_file = ".env"

@@ -6,7 +6,6 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     LOG_LEVEL: str = "INFO"
     REQUEST_TIMEOUT: int = 30
-    MODERATOR_URL: str = "localhost:8002"
 
     class Config:
         env_file = ".env"

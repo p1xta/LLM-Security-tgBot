@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 from functools import lru_cache
+import os
 
 class Settings(BaseSettings):
     # Настройки приложения
@@ -7,8 +8,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     REQUEST_TIMEOUT: int = 30
 
-    # ORCHESTRATOR_URL: str = "http://158.160.199.27:8001"
-    ORCHESTRATOR_URL: str = "http://localhost:8001"
+    ORCHESTRATOR_URL: str = os.environ.get("ORCHESTRATOR_URL", "http://localhost:8000")
     
     class Config:
         env_file = ".env"
