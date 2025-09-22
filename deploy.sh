@@ -18,7 +18,10 @@ for service in "${SERVICES[@]}"; do
   
   container_name="${service//_/-}"
 
-  yc serverless container create --name $container_name || true
+  if ! yc serverless container get --name $container_name &>/dev/null; then
+        yc serverless container create --name $container_name
+        echo "Container $service created"
+    fi
 
   cd ..
   
