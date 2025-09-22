@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
-from ...services.orchestration import OrchestrationService
-from ...api.models.request import ProcessRequest
-from ...api.models.response import ProcessResponse
-from ...exceptions.specific import ValidationFailedError, ServiceUnavailableError
+from services.orchestration import OrchestrationService
+from api.models.request import ProcessRequest
+from api.models.response import ProcessResponse
+from exceptions.specific import ValidationFailedError, ServiceUnavailableError
 
 router = APIRouter()
 

@@ -1,7 +1,7 @@
 import httpx
 from typing import Dict, Any
-from ..config.settings import get_settings
-from ..utils.retry import with_retry
+from config.settings import get_settings
+from utils.retry import with_retry
 
 settings = get_settings()
 

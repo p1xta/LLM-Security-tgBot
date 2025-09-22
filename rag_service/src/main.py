@@ -2,7 +2,7 @@ from fastapi import FastAPI
 import uvicorn
 import os
 
-from .api.routes import main_router
+from api.routes import main_router
 
 
 def create_app() -> FastAPI:

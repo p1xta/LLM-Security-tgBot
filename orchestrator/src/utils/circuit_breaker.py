@@ -2,7 +2,7 @@ import time
 from functools import wraps
 from typing import Callable, Any, Optional
 import logging
-from ..exceptions.specific import ServiceUnavailableError
+from exceptions.specific import ServiceUnavailableError
 
 logger = logging.getLogger(__name__)
 

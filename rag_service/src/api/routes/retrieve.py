@@ -2,12 +2,12 @@ import os
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from ...clients.faiss_bridge import FAISSbridge
-from ...clients.s3_bridge import S3Bridge
-from ...api.models.request import RAGRequest
-from ...api.models.response import RAGResponse
-from ...exceptions.specific import ValidationFailedError, ServiceUnavailableError
-from ...utils.get_secrets import get_all_secrets_payload
+from clients.faiss_bridge import FAISSbridge
+from clients.s3_bridge import S3Bridge
+from api.models.request import RAGRequest
+from api.models.response import RAGResponse
+from exceptions.specific import ValidationFailedError, ServiceUnavailableError
+from utils.get_secrets import get_all_secrets_payload
 
 router = APIRouter()
 
