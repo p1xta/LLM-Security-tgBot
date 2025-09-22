@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 import uvicorn
+import os
 
-from .api.routes import main_router
+from api.routes import main_router
 
 
 def create_app() -> FastAPI:
@@ -13,4 +14,4 @@ def create_app() -> FastAPI:
 
 if __name__ == "__main__":
     app = create_app()
-    uvicorn.run(app, host="0.0.0.0", port=8003)
+    uvicorn.run(app, host="0.0.0.0", port=int(os.environ['PORT']))

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Request
-from ..models.request import ValidationRequest
+from api.models.request import ValidationRequest
 import json
 
 router = APIRouter()

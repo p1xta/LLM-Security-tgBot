@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from ..models.request import ValidationRequest
-from ...clients.validator_client import ModeratorClient
+from api.models.request import ValidationRequest
+from clients.validator_client import ModeratorClient
 import re
 
 router = APIRouter()

@@ -1,6 +1,6 @@
 import httpx
 from typing import Dict, Any
-from ..config.settings import get_settings
+from config.settings import get_settings
 
 settings = get_settings()
 

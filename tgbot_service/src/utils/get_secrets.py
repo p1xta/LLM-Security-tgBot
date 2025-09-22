@@ -1,67 +1,29 @@
 import json
 from typing import Optional, Dict
-import time
 import os
 import requests
-import jwt
 from dotenv import load_dotenv
 
 from src.log.logger import logger
 
+
 load_dotenv()
 
-SERVICE_ACCOUNT_ID = os.getenv("SERVICE_ACCOUNT_ID")
-KEY_ID = os.getenv("KEY_ID")
-PRIVATE_KEY = os.getenv("PRIVATE_KEY")
 FOLDER_ID = os.getenv("FOLDER_ID")
 
-def get_iam_token(iam_token):
-    """Получение IAM-токена (с кэшированием на 1 час)"""
-    token_expires = 3600
-    if iam_token and time.time() < token_expires:
-        return iam_token
 
-    try:
-        now = int(time.time())
-        payload = {
-            "aud": "https://iam.api.cloud.yandex.net/iam/v1/tokens",
-            "iss": SERVICE_ACCOUNT_ID,
-            "iat": now,
-            "exp": now + 3600,
-        }
-
-        encoded_token = jwt.encode(
-            payload,
-            PRIVATE_KEY,
-            algorithm="PS256",
-            headers={"kid": KEY_ID},
-        )
-
-        response = requests.post(
-            "https://iam.api.cloud.yandex.net/iam/v1/tokens",
-            json={"jwt": encoded_token},
-            timeout=10,
-        )
-
-        if response.status_code != 200:
-            raise Exception(f"Ошибка генерации токена: {response.text}")
-
-        token_data = response.json()
-        iam_token = token_data["iamToken"]
-        token_expires = (
-            now + 3500
-        )
-
-        logger.info("IAM token generated successfully")
-        return iam_token
-
-    except Exception as e:
-        logger.error(f"Error generating IAM token: {str(e)}")
-        raise
+def get_iam_token_on_YC_vm():
+    header = {
+        "Metadata-Flavor":"Google"
+    }
+    url = "http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token"
+    response = requests.get(url=url, headers=header)
+    json_response = response.json()
+    return json_response['access_token']
 
 def get_all_secrets_payload(folder_id: Optional[str] = FOLDER_ID, timeout: int = 10) -> Dict[str, Dict[str, str]]:
     headers = {
-        "Authorization": f"Bearer {get_iam_token(None)}",
+        "Authorization": f"Bearer {get_iam_token_on_YC_vm()}",
         "Accept": "application/json",
     }
 
