@@ -1,7 +1,7 @@
 import logging
 
 
-LOG_FILE = "tgbot_service.log"
+LOG_FILE = "src/log/tgbot_service.log"
 
 logging.basicConfig(
     level=logging.INFO,

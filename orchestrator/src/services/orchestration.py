@@ -5,29 +5,39 @@ from utils.retry import with_retry
 from utils.circuit_breaker import with_circuit_breaker
 from exceptions.specific import ValidationFailedError
 
+from log.logger import logger
+
+
 class OrchestrationService:
     def __init__(self):
         self.validator_client = ValidatorClient()
         self.rag_client = RAGClient()
         self.llm_client = LLMClient()
+        logger.info("Оркестратор инициализирован с валидатором, RAG и LLM.")
     
     @with_retry(max_attempts=3, delay=1)
     @with_circuit_breaker(failure_threshold=5, recovery_timeout=30)
     async def validate_request(self, payload: dict):
         response = await self.validator_client.validate(payload)
         if not response.get("is_valid", False):
+            logger.warning(f"Валидация не пройдена для запроса: {payload.get('text', 'Текст не указан')}")
             raise ValidationFailedError("Request validation failed")
+        logger.info("Валидация запроса успешно пройдена")
         return response
     
     @with_retry(max_attempts=3, delay=1)
     @with_circuit_breaker(failure_threshold=5, recovery_timeout=30)
     async def retrieve_context(self, payload: dict):
-        return await self.rag_client.retrieve(payload)
+        response = await self.rag_client.retrieve(payload)
+        logger.info(f"Найдено {len(response.get('chunks', []))} чанков контекста")
+        return response
     
     @with_retry(max_attempts=3, delay=1)
     @with_circuit_breaker(failure_threshold=5, recovery_timeout=30)
     async def generate_response(self, context: dict):
-        return await self.llm_client.generate(context)
+        response = await self.llm_client.generate(context)
+        logger.info(f"Ответ сгенерирован успешно, длина ответа: {len(response.get('message', ''))} символов")
+        return response
     
     async def __call__(self, payload: dict):
         # Валидация запроса
@@ -59,3 +69,4 @@ class OrchestrationService:
 
 # Создаем экземпляр сервиса для dependency injection
 orchestrate_processing = OrchestrationService()
+logger.info("OrchestrationService создан и готов к работе")

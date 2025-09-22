@@ -1,10 +1,11 @@
+import os
 from fastapi import FastAPI
 from api.routes import main_router as api_router
 from config.settings import get_settings
 from contextlib import asynccontextmanager
 from utils.yandex_gpt import YandexGPTBot
-import os
 
+from log.logger import logger
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -13,9 +14,9 @@ async def lifespan(app: FastAPI):
     try:
         # опционально проверить токен сразу
         bot.get_iam_token()
-        print("Yandex bot initialized and token fetched")
+        logger.info("Yandex бот инициализарован и токен получен.")
     except Exception:
-        print("Failed to init Yandex bot at startup — continuing anyway")
+        print("Ошибка при инициализации Yandex бота - продолжаем в любом случае.")
     app.state.yandex_bot = bot
 
     yield

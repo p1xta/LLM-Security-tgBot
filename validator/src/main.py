@@ -1,12 +1,12 @@
+import os
 from fastapi import FastAPI
+
 from api.routes import main_router as api_router
 from config.settings import get_settings
-import os
-#from .utils.logging import setup_logging
+
 
 def create_app() -> FastAPI:
     settings = get_settings()
-    #setup_logging(level=settings.LOG_LEVEL)
     
     app = FastAPI(
         title="Validator Service",

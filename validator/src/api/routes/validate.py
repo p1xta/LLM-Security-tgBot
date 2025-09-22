@@ -1,7 +1,11 @@
-from fastapi import APIRouter, HTTPException
+import re
+from fastapi import APIRouter
+
 from api.models.request import ValidationRequest
 from clients.validator_client import ModeratorClient
-import re
+
+from log.logger import logger
+
 
 router = APIRouter()
 
@@ -40,7 +44,7 @@ async def process_request(request: ValidationRequest):
     alerts = check_fraud(request.text)
     
     for alert in alerts:
-        print(f"\n\nERROR: {request.user_id} TRIED TO FRAUD THE MODEL\ntype: {alert[0]}\nmessage: {request.text}\n\n")
+        logger.warning(f"\n\n{request.user_id} Попытался взломать модель: {alert[0]}\nСообщение: {request.text}\n\n")
         return {"is_valid": False}
     print(request)
     response = await ModeratorClient().moderate(request.model_dump())

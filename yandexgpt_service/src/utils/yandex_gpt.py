@@ -1,9 +1,9 @@
 import requests
 import time
 import jwt
-import logging
 
 from .get_secrets import get_all_secrets_payload
+from log.logger import logger
 
 
 secrets_dict = get_all_secrets_payload()
@@ -12,12 +12,6 @@ SERVICE_ACCOUNT_ID = secrets_dict["SERVICE_ACCOUNT_ID"]
 KEY_ID = secrets_dict["KEY_ID"]
 PRIVATE_KEY = secrets_dict["PRIVATE_KEY"]
 FOLDER_ID = secrets_dict["FOLDER_ID"]
-
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    level=logging.INFO,
-)
-logger = logging.getLogger(__name__)
 
 
 class YandexGPTBot:
@@ -52,6 +46,7 @@ class YandexGPTBot:
             )
 
             if response.status_code != 200:
+                logger.error(f"Ошибка генерации токена: {response.text}")
                 raise Exception(f"Ошибка генерации токена: {response.text}")
 
             token_data = response.json()
@@ -60,11 +55,11 @@ class YandexGPTBot:
                 now + 3500
             )  # На 100 секунд меньше срока действия
 
-            logger.info("IAM token generated successfully")
+            logger.info("IAM токен успешно сгенерирован.")
             return self.iam_token
 
         except Exception as e:
-            logger.error(f"Error generating IAM token: {str(e)}")
+            logger.error(f"Ошибка генерации IAM токена: {str(e)}")
             raise
 
     def ask_gpt(self, user_prompt, sys_prompt):
@@ -104,13 +99,14 @@ class YandexGPTBot:
             )
 
             if response.status_code != 200:
-                logger.error(f"Yandex GPT API error: {response.text}")
+                logger.error(f"Ошибка в Yandex GPT API: {response.text}")
                 raise Exception(f"Ошибка API: {response.status_code}")
 
+            logger.info(f"Ответ Yandex GPT успешно сгенерирован.")
             return response.json()["result"]["alternatives"][0]["message"][
                 "text"
             ]
 
         except Exception as e:
-            logger.error(f"Error in ask_gpt: {str(e)}")
+            logger.error(f"Ошибка при ask_gpt: {str(e)}")
             raise

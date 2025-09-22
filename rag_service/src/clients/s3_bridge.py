@@ -1,10 +1,11 @@
 import os
 import tempfile
+import boto3
 from pathlib import Path
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.document_loaders import TextLoader
 
-import boto3
+from log.logger import logger
 
 
 def read_file(filepath):
@@ -33,11 +34,11 @@ class S3Bridge:
             self.client.upload_file(
                 local_file_path, s3_bucket, local_file_path
             )
-            return f"Файл {local_file_path} успешно отправлен в bucket {s3_bucket}."
+            logger.info(f"Файл {local_file_path} успешно отправлен в bucket {s3_bucket}.")
         except FileNotFoundError:
-            print(f"Файл {local_file_path} не найден.")
+            logger.error(f"Файл {local_file_path} не найден.")
         except Exception as e:
-            print(f"Ошибка загрузки файла: {e}")
+            logger.error(f"Ошибка загрузки файла: {e}")
 
     def download_from_s3(self, s3_bucket: str, s3_folder: str = ""):
         try:
@@ -45,7 +46,7 @@ class S3Bridge:
                 Bucket=s3_bucket, Prefix=s3_folder
             )
         except Exception as e:
-            print(f"Ошибка подключения: {e}")
+            logger.error(f"Ошибка подключения: {e}")
             return None
 
         if "Contents" not in objects:
@@ -72,7 +73,7 @@ class S3Bridge:
                         continue
                     local_files.extend(docs)
                 except Exception as e:
-                    print(f"Ошибка скачивания {key}: {e}")
+                    logger.error(f"Ошибка скачивания {key}: {e}")
                     continue
 
             return local_files
