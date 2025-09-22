@@ -2,7 +2,7 @@ name: Build and Push Images
 
 on:
   push:
-    branches: [lockbox_secrets]
+    branches: [deploy_actions]
 
 env:
   REGISTRY_ID: ${{ secrets.YC_REGISTRY_ID }}
@@ -28,6 +28,6 @@ jobs:
         
         for service in "${services[@]}"; do
           echo "Building $service..."
-          docker build -t cr.yandex/$REGISTRY_ID/$services:latest .
-          docker push cr.yandex/$REGISTRY_ID/$services:latest
+          docker build -t cr.yandex/$REGISTRY_ID/$service:latest .
+          docker push cr.yandex/$REGISTRY_ID/$service:latest
         done
