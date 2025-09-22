@@ -2,16 +2,16 @@ import requests
 import time
 import jwt
 import logging
-import os
-from dotenv import load_dotenv
 
-load_dotenv()
+from .get_secrets import get_all_secrets_payload
 
-SERVICE_ACCOUNT_ID = os.getenv("SERVICE_ACCOUNT_ID")
-KEY_ID = os.getenv("KEY_ID")
-PRIVATE_KEY = os.getenv("PRIVATE_KEY")
-FOLDER_ID = os.getenv("FOLDER_ID")
 
+secrets_dict = get_all_secrets_payload()
+
+SERVICE_ACCOUNT_ID = secrets_dict["SERVICE_ACCOUNT_ID"]
+KEY_ID = secrets_dict["KEY_ID"]
+PRIVATE_KEY = secrets_dict["PRIVATE_KEY"]
+FOLDER_ID = secrets_dict["FOLDER_ID"]
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -38,7 +38,6 @@ class YandexGPTBot:
                 "iat": now,
                 "exp": now + 3600,
             }
-
             encoded_token = jwt.encode(
                 payload,
                 PRIVATE_KEY,
@@ -47,7 +46,7 @@ class YandexGPTBot:
             )
 
             response = requests.post(
-                "https://iam.api.cloud.yandex.net/iam/v1/tokens",  # save this
+                "https://iam.api.cloud.yandex.net/iam/v1/tokens",
                 json={"jwt": encoded_token},
                 timeout=10,
             )
@@ -98,7 +97,7 @@ class YandexGPTBot:
             }
 
             response = requests.post(
-                "https://llm.api.cloud.yandex.net/foundationModels/v1/completion",  # save this
+                "https://llm.api.cloud.yandex.net/foundationModels/v1/completion",
                 headers=headers,
                 json=data,
                 timeout=30,

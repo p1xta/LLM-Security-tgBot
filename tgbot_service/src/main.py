@@ -4,14 +4,17 @@ from http import HTTPStatus
 from fastapi import FastAPI, Request, Response
 from telegram import Update
 import httpx
-from dotenv import load_dotenv
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 
-load_dotenv()
+from .config.settings import get_settings
+from .utils.get_secrets import get_all_secrets_payload
 
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-WEBHOOK_DOMAIN = "https://2107667e15b5.ngrok-free.app"
-ORCHESTRATOR_URL = "https://localhost:8001"
+settings = get_settings()
+
+secrets_dict = get_all_secrets_payload()
+TELEGRAM_TOKEN = secrets_dict["TELEGRAM_TOKEN"]
+WEBHOOK_DOMAIN = ""
+ORCHESTRATOR_URL = settings.ORCHESTRATOR_URL
 
 
 bot_builder = (
@@ -50,12 +53,21 @@ async def start(update: Update, _: ContextTypes.DEFAULT_TYPE):
 async def handle_message(update: Update, _: ContextTypes.DEFAULT_TYPE):
     user_text = update.message.text
     chat_id = update.message.chat_id
+    user_id = update.message.from_user.id
+    message_id = update.message.message_id
+    message_date = update.message.date.strftime("%Y-%m-%d %H:%M:%S")
 
     async with httpx.AsyncClient() as client:
         try:
             response = await client.post(
-                ORCHESTRATOR_URL,
-                json={"chat_id": chat_id, "text": user_text},
+                f"{ORCHESTRATOR_URL}/process",
+                json={
+                    "user_id": user_id,
+                    "message_id": message_id,
+                    "chat_id": chat_id, 
+                    "text": user_text,
+                    "timestamp": message_date
+                },
                 timeout=30,
             )
             data = response.json()

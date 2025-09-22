@@ -1,22 +1,20 @@
+import os
+
 from fastapi import APIRouter, Depends, HTTPException
+
 from ...clients.faiss_bridge import FAISSbridge
 from ...clients.s3_bridge import S3Bridge
 from ...api.models.request import RAGRequest
 from ...api.models.response import RAGResponse
 from ...exceptions.specific import ValidationFailedError, ServiceUnavailableError
-import os
-from dotenv import load_dotenv
+from ...utils.get_secrets import get_all_secrets_payload
 
 router = APIRouter()
 
-
-load_dotenv()
-
-S3_ENDPOINT = os.getenv("S3_ENDPOINT")
-S3_ACCESS_KEY = os.getenv("S3_ACCESS_KEY")
-S3_SECRET_KEY = os.getenv("S3_SECRET_KEY")
-S3_BUCKET = os.getenv("S3_BUCKET")
-S3_PREFIX = os.getenv("S3_PREFIX")
+secrets_dict = get_all_secrets_payload()
+S3_ENDPOINT = secrets_dict["S3_ENDPOINT"]
+S3_ACCESS_KEY = secrets_dict["S3_ACCESS_KEY"]
+S3_SECRET_KEY = secrets_dict["S3_SECRET_KEY"]
 
 faiss_service = FAISSbridge()
 s3_service = S3Bridge(
