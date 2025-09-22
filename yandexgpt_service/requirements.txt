@@ -5,4 +5,5 @@ datetime
 fastapi
 pydantic_settings
 requests
+cryptography
 PyJWT==2.10.1

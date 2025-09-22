@@ -9,13 +9,14 @@ from telegram.ext import Application, CommandHandler, MessageHandler, ContextTyp
 
 from config.settings import get_settings
 from utils.get_secrets import get_all_secrets_payload
+from utils.get_iam_token import get_iam_token_on_YC_vm
 from log.logger import logger
 
 settings = get_settings()
 
 secrets_dict = get_all_secrets_payload()
 TELEGRAM_TOKEN = secrets_dict["TELEGRAM_TOKEN"]
-WEBHOOK_DOMAIN = ""
+WEBHOOK_DOMAIN = os.environ.get("WEBHOOK_URL", "")
 ORCHESTRATOR_URL = settings.ORCHESTRATOR_URL
 
 
@@ -68,8 +69,12 @@ async def handle_message(update: Update, _: ContextTypes.DEFAULT_TYPE):
 
     async with httpx.AsyncClient() as client:
         try:
+            iam_token = await get_iam_token_on_YC_vm(client)
             response = await client.post(
                 f"{ORCHESTRATOR_URL}/process",
+                headers={
+                    "Authorization": f"Bearer {iam_token}"
+                },
                 json={
                     "user_id": user_id,
                     "message_id": message_id,

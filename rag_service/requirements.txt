@@ -14,3 +14,4 @@ langchain
 langchain_community
 boto3
 sentence-transformers
+pypdf

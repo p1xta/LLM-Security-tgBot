@@ -2,7 +2,7 @@
 
 REGISTRY_ID="crp4q1r2fo7v9m0j1vvh"
 SERVICE_ACCOUNT_ID="ajelb450lc8haab6f4u7"
-SERVICES=("rag_service" "orchestrator" "tgbot_service" "validator" "yandexgpt_service")
+SERVICES=("tgbot_service")
 
 echo "Logging into Yandex Container Registry..."
 YC_TOKEN=$(yc iam create-token)
