@@ -6,6 +6,7 @@ import requests
 import jwt
 from dotenv import load_dotenv
 
+from src.log.logger import logger
 
 load_dotenv()
 
@@ -51,11 +52,11 @@ def get_iam_token(iam_token):
             now + 3500
         )
 
-        print("IAM token generated successfully")
+        logger.info("IAM token generated successfully")
         return iam_token
 
     except Exception as e:
-        print(f"Error generating IAM token: {str(e)}")
+        logger.error(f"Error generating IAM token: {str(e)}")
         raise
 
 def get_all_secrets_payload(folder_id: Optional[str] = FOLDER_ID, timeout: int = 10) -> Dict[str, Dict[str, str]]:
@@ -79,21 +80,21 @@ def get_all_secrets_payload(folder_id: Optional[str] = FOLDER_ID, timeout: int =
         try:
             resp = requests.get(base_list_url, headers=headers, params=params or None, timeout=timeout)
         except requests.RequestException as e:
-            print("Network error when calling Lockbox list API: %s", e)
+            logger.error(f"Network error when calling Lockbox list API: {e}")
             break
 
         if resp.status_code in (401, 403):
-            print("Auth error from Lockbox API: %s %s", resp.status_code, resp.text)
+            logger.error(f"Auth error from Lockbox API: {resp.status_code}, {resp.text}")
             break
 
         if not resp.ok:
-            print("Error listing secrets: %s %s", resp.status_code, resp.text)
+            logger.error("Error listing secrets: {resp.status_code}, {resp.text}")
             break
 
         try:
             body = resp.json()
         except json.JSONDecodeError as e:
-            print("Failed to parse JSON from list response: %s", e)
+            logger.error(f"Failed to parse JSON from list response: {e}")
             break
 
         for secret in body.get("secrets", []):
@@ -105,17 +106,17 @@ def get_all_secrets_payload(folder_id: Optional[str] = FOLDER_ID, timeout: int =
             try:
                 p_resp = requests.get(payload_url, headers=headers, timeout=timeout)
             except requests.RequestException as e:
-                print("Network error when fetching payload for %s: %s", secret_id, e)
+                logger.error(f"Network error when fetching payload for secrets: {e}")
                 continue
 
             if not p_resp.ok:
-                print("Error fetching payload for %s: %s %s", secret_id, p_resp.status_code, p_resp.text)
+                logger.error("Error fetching payload for one of the secrets.")
                 continue
 
             try:
                 payload_json = p_resp.json()
             except json.JSONDecodeError:
-                print("Failed to parse JSON payload for %s. Raw: %s", secret_id, p_resp.text)
+                logger.error("Failed to parse JSON payload for one of the secrets.")
                 continue
 
             entries = payload_json.get("entries")
