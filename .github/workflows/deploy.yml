@@ -33,7 +33,7 @@ jobs:
         
         for service in "${services[@]}"; do
             echo "Processing $service..."
-            url=$(yc serverless container get "$service" 2>/dev/null | grep -oP 'url:\s*\K[^[:space:]]+' || echo "")
+            url=$(yc serverless container get "$service" | grep -oP 'url:\s*\K[^[:space:]]+' || echo "")
             
             if [ -n "$url" ]; then
                 var_name=$(echo "${service^^}" | tr '-' '_')_URL
