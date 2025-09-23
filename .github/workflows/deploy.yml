@@ -34,12 +34,26 @@ jobs:
 
     - name: Build docker images
       run: |
-        SERVICES_ARR=${{ env.SERVICES }}
-        for service in $(echo $SERVICES_ARR | jq -r '.[]'); do
-          echo "Building Docker image for $service..."
-          cd $service
-          docker build -t cr.yandex/${{ env.REGISTRY_ID }}/$service:latest .
-          docker push cr.yandex/${{ env.REGISTRY_ID }}/$service:latest
-          cd ..
-          echo "$service image built and pushed successfully"
+        SERVICES=("rag_service" "orchestrator" "tgbot_service" "validator" "yandexgpt_service")
+
+        for service in "${SERVICES[@]}"; do
+            echo "Building $service..."
+            
+            cd $service
+            docker build -t cr.yandex/$REGISTRY_ID/$service:latest .
+            docker push cr.yandex/$REGISTRY_ID/$service:latest
+            cd ..
+            
+            container_name="${service//_/-}"
+            
+            deploy_cmd="yc serverless container revision deploy \
+                --container-name $container_name \
+                --image cr.yandex/$REGISTRY_ID/$service:latest \
+                --service-account-id $SERVICE_ACCOUNT_ID \
+                --execution-timeout 1m \
+                --cores 1 \
+                --memory 512MB \
+                --concurrency 4 \
+                --environment FOLDER_ID=$FOLDER_ID"
+            
         done
