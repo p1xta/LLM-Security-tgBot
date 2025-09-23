@@ -22,7 +22,7 @@ jobs:
         curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
         exec bash -l
         export PATH="$HOME/.yandex-cloud/bin:$PATH"
-        yc --version
+        source "/home/runner/.bashrc
 
     - name: Configure Yandex Cloud
       run: |
