@@ -65,6 +65,7 @@ async def handle_message(update: Update, _: ContextTypes.DEFAULT_TYPE):
     message_id = update.message.message_id
     message_date = update.message.date.strftime("%Y-%m-%d %H:%M:%S")
 
+    processing_message = await update.message.reply_text("Обработка запроса...")
     logger.info(f"Обрабатывается сообщение от {user_id} ({chat_id}): {user_text}")
 
     async with httpx.AsyncClient() as client:
@@ -90,8 +91,8 @@ async def handle_message(update: Update, _: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             reply = f"❌ Сервис недоступен: {e}"
             logger.error(f"Ошибка при запросе к оркестратору: {e}")
-
-    await update.message.reply_text(reply)
+    #await processing_message.delete()
+    await processing_message.edit_text(reply)
 
 
 if __name__ == "__main__":
