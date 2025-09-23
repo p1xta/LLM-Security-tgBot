@@ -10,19 +10,12 @@ env:
 
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-22.04
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-
-    - name: Login to Yandex Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: cr.yandex
-        username: iam
-        password: ${{ secrets.YC_OAUTH_TOKEN }}
 
     - name: Install Yandex Cloud CLI
       run: |
@@ -33,30 +26,12 @@ jobs:
       run: |
         yc config set token ${{ secrets.YC_OAUTH_TOKEN }}
         yc config set folder-id ${{ secrets.YC_FOLDER_ID }}
-
-    - name: Get container URLs and set environment variables
-      id: container-urls
+    
+    - name: Get IAM token and login to Container Registry
       run: |
-        cat > get_urls.sh << 'EOF'
-        #!/bin/bash
-        services=("rag_service" "orchestrator" "tgbot_service" "validator" "yandexgpt_service")
-        yc serverless container list
-        for service in "${services[@]}"; do
-            echo "Processing $service..."
-            url=$(yc serverless container get "$service" | grep -oP 'url:\s*\K[^[:space:]]+' || echo "")
-            
-            if [ -n "$url" ]; then
-                var_name=$(echo "${service^^}" | tr '-' '_')_URL
-                echo "${var_name}=${url}" >> $GITHUB_ENV
-                echo "$var_name set"
-            else
-                echo "URL not found for $service"
-            fi
-        done
-        EOF
-        
-        chmod +x get_urls.sh
-        ./get_urls.sh
+        YC_IAM_TOKEN=$(yc iam create-token)
+        echo $YC_IAM_TOKEN | docker login cr.yandex -u iam --password-stdin
+        echo "Logged in to Yandex Container Registry"
 
     - name: Build and push images
       run: |
