@@ -27,7 +27,7 @@ jobs:
     - name: Build and deploy containers
       run: |
         curl -s https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -i $HOME/.yandex-cloud -n
-        yc= "$HOME/.yandex-cloud/bin"
+        yc= "$HOME/.yandex-cloud/bin/yc"
         cat > deploy.sh << 'EOF'
         #!/bin/bash
 
