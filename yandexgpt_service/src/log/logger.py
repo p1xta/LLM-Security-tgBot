@@ -1,7 +1,7 @@
 import logging
 
 
-LOG_FILE = "src/log/rag_service.log"
+LOG_FILE = "src/log/yandexGPT_service.log"
 
 logging.basicConfig(
     level=logging.INFO,
@@ -12,4 +12,4 @@ logging.basicConfig(
     ]
 )
 
-logger = logging.getLogger("RAG")
+logger = logging.getLogger("GPT")

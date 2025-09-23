@@ -8,6 +8,7 @@ from api.models.request import RAGRequest
 from api.models.response import RAGResponse
 from exceptions.specific import ValidationFailedError, ServiceUnavailableError
 from utils.get_secrets import get_all_secrets_payload
+from log.logger import logger
 
 router = APIRouter()
 
@@ -32,6 +33,7 @@ async def retrieve_context(
     try:
         docs = s3_service.download_from_s3(request.bucket, request.folder)
         if not docs:
+            logger.info("Документы в хранилище не найдены.")
             return RAGResponse(
                 message="Документы не найдены",
                 original_request=request.model_dump(),
@@ -45,8 +47,11 @@ async def retrieve_context(
             "chunks": [doc.page_content for doc in retrieved]
         }
     except ValidationFailedError as e:
+        logger.error(f"Ошибка при получении контекста: код 400. {e}")
         raise HTTPException(status_code=400, detail=str(e))
     except ServiceUnavailableError as e:
+        logger.error(f"Ошибка при получении контекста: код 503. {e}")
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
+        logger.error(f"Ошибка при получении контекста: код 500. {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error {e}")

@@ -3,6 +3,8 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from pathlib import Path
 
+from log.logger import logger
+
 
 class FAISSbridge:
     def __init__(self, store_filepath: str = "./vectorstore_faiss"):
@@ -25,6 +27,7 @@ class FAISSbridge:
         
     def find_relevant_data(self, user_input: str):
         retrieved_docs = self.retriever.invoke(user_input)
+        logger.info(f"Найдено {len(retrieved_docs)} подходящих докуметов.")
         return retrieved_docs
 
     @staticmethod
@@ -35,6 +38,7 @@ class FAISSbridge:
             separators=["\n\n", "\n", " ", ""]
         )
         chunks = text_splitter.split_documents(docs)
+        logger.info(f"FAISS нашел {len(chunks)} подходящих чанков.")
         return chunks
     
     
