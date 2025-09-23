@@ -4,6 +4,7 @@ import boto3
 from pathlib import Path
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.document_loaders import TextLoader
+from langchain_community.document_loaders import BSHTMLLoader
 
 from log.logger import logger
 
@@ -13,6 +14,8 @@ def read_file(filepath):
         loader = PyPDFLoader(filepath)
     elif filepath.endswith(".txt"):
         loader = TextLoader(filepath, encoding="utf-8")
+    elif filepath.endswith(".html", ".htm"):
+        loader = BSHTMLLoader(filepath, open_encoding="utf-8", get_text_separator='\n')
     
     loaded = loader.load()
     
@@ -29,10 +32,10 @@ class S3Bridge:
     def __init__(self, *args, **kwargs):
         self.client = boto3.client(*args, **kwargs)
 
-    def upload_to_s3(self, s3_bucket: str, local_file_path: Path):
+    def upload_to_s3(self, s3_bucket: str, local_file_path: Path, dest_file_path: str):
         try:
             self.client.upload_file(
-                local_file_path, s3_bucket, local_file_path
+                local_file_path, s3_bucket, dest_file_path
             )
             logger.info(f"Файл {local_file_path} успешно отправлен в bucket {s3_bucket}.")
         except FileNotFoundError:

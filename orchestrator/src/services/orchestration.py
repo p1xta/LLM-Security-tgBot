@@ -47,7 +47,8 @@ class OrchestrationService:
         # Получение контекста
         context = await self.retrieve_context({
                 "bucket": "tgbot-storage",
-                "query": payload['text']
+                "query": payload['text'],
+                "user_id": str(payload['user_id']),
             })
         
         chunks = context['chunks']

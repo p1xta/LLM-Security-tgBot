@@ -4,3 +4,4 @@ privat.pem
 .private_info
 .ruff_cache
 __pycache__
+*.log
