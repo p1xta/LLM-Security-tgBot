@@ -26,9 +26,11 @@ jobs:
 
     - name: Build and deploy containers
       run: |
-        export PATH="$HOME/.yandex-cloud/bin:$PATH"
+        curl -s https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -i $HOME/.yandex-cloud -n
+        echo "$HOME/.yandex-cloud/bin" >> $GITHUB_PATH
+
+        yc config set token ${{ secrets.YC_OAUTH_TOKEN }}
         
-        # Ваш скрипт с небольшими исправлениями для GitHub Actions
         cat > deploy.sh << 'EOF'
         #!/bin/bash
 
