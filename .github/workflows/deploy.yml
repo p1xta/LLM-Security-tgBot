@@ -22,6 +22,9 @@ jobs:
       with:
         oauth-token: ${{ secrets.YC_OAUTH_TOKEN }}
 
+    - name: Configure Yandex Cloud CLI
+      run: yc config set token ${{ secrets.YC_OAUTH_TOKEN }}
+
     - name: Login to Yandex Container Registr
       uses: docker/login-action@v3
       with:
@@ -43,12 +46,12 @@ jobs:
 
             echo "✅ $service image built and pushed successfully"            
         done
+
     - name: Setup containers
       run: |
         SERVICES=("rag_service" "orchestrator" "tgbot_service" "validator" "yandexgpt_service")
 
         for service in "${SERVICES[@]}"; do
-            container_name="${service//_/-}"
             echo "Setting up container: $container_name"
           
           if ! yc serverless container get --name $container_name &>/dev/null; then
@@ -66,16 +69,13 @@ jobs:
         echo "Getting container URLs..."
         
         for service in "${SERVICES[@]}"; do
-          container_name="${service//_/-}"
           url=$(yc serverless container get --name $container_name --format json | jq -r '.url // empty')
           
           if [ -n "$url" ]; then
             echo "URL for $service: $url"
             clean_url="${url%?}"
-            echo "$service=$clean_url" >> $GITHUB_OUTPUT
           else
             echo "⚠️ URL not found for $container_name"
-            echo "$service=" >> $GITHUB_OUTPUT
           fi
         done
       continue-on-error: true
