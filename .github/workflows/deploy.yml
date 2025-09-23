@@ -19,11 +19,10 @@ jobs:
 
     - name: Install Yandex Cloud CLI
       run: |
-        curl -sSL https://storage.yandex-cloud.net/yandex-cloud-yeezy/install.sh | bash
+        wget -q https://storage.yandex-cloud.net/yandex-cloud-yeezy/install.sh -O install.sh
+        bash install.sh
         echo "$HOME/.yandex-cloud/bin" >> $GITHUB_PATH
-        exec -l $SHELL
         yc --version
-        $HOME/.yandex-cloud/bin/yc --version
 
 
     - name: Configure Yandex Cloud
