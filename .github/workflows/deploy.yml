@@ -81,8 +81,8 @@ jobs:
 
     - name: Display final URLs
       run: |
-        echo "🎉 Deployment completed!"
-        echo "📋 Container internal DNS names:"
+        echo "Deployment completed!"
+        echo "Container internal DNS names:"
         echo "   rag: http://rag.containers.yandexcloud.net"
         echo "   orchestrator: http://orchestrator.containers.yandexcloud.net"
         echo "   tgbot: http://tgbot.containers.yandexcloud.net"
