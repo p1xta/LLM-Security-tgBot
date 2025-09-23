@@ -2,15 +2,13 @@ name: Build and Push Images
 
 on:
   push:
-    branches: [deploy_actions]
+    branches: [lockbox_secrets]
 
 env:
   REGISTRY_ID: ${{ secrets.YC_REGISTRY_ID }}
-  SERVICE_ACCOUNT_ID: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
-
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-22.04
     
     steps:
@@ -24,7 +22,6 @@ jobs:
         username: iam
         password: ${{ secrets.YC_OAUTH_TOKEN }}
 
-
     - name: Build and push images
       run: |
         services=("rag_service" "orchestrator" "tgbot_service" "validator" "yandexgpt_service")
@@ -36,50 +33,3 @@ jobs:
           docker push cr.yandex/$REGISTRY_ID/$service:latest
           cd ..
         done
-
-    - name: Deploy to Yandex Cloud
-      run: |
-        services=("rag_service" "orchestrator" "tgbot_service" "validator" "yandexgpt_service")
-        
-        for service in "${services[@]}"; do
-          echo "Deploying $service..."
-          
-          if ! yc serverless container get --name $container_name &>/dev/null; then
-            yc serverless container create --name $container_name
-            echo "Container $service created"
-          fi
-
-          deploy_base="yc serverless container revision deploy \
-            --container-name $service \
-            --image cr.yandex/$REGISTRY_ID/$service:latest \
-            --service-account-id $SERVICE_ACCOUNT_ID \
-            --cores 1 --memory 512MB --concurrency 4"
-
-          case $service in
-            "orchestrator")
-              deploy_base="$deploy_base --environment YANDEXGPT_URL=http://yandexgpt.containers.yandexcloud.net"
-              deploy_base="$deploy_base --environment VALIDATOR_URL=http://validator.containers.yandexcloud.net"
-              deploy_base="$deploy_base --environment RAG_URL=http://rag.containers.yandexcloud.net"
-              ;;
-            "tgbot")
-              deploy_base="$deploy_base --environment ORCHESTRATOR_URL=http://orchestrator.containers.yandexcloud.net"
-              deploy_base="$deploy_base --connectivity external"
-              ;;
-          esac
-          
-          eval $deploy_base
-          echo "$service deployed"
-        done
-
-    - name: Display final URLs
-      run: |
-        echo "Deployment completed!"
-        echo "Container internal DNS names:"
-        echo "   rag: http://rag.containers.yandexcloud.net"
-        echo "   orchestrator: http://orchestrator.containers.yandexcloud.net"
-        echo "   tgbot: http://tgbot.containers.yandexcloud.net"
-        echo "   validator: http://validator.containers.yandexcloud.net"
-        echo "   yandexgpt: http://yandexgpt.containers.yandexcloud.net"
-        
-        tgbot_url=$(yc serverless container get tgbot 2>/dev/null | grep -oP 'url:\s*\K[^[:space:]]+' || echo "not available yet")
-        echo "Public tgbot URL: $tgbot_url"
