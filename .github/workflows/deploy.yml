@@ -24,13 +24,23 @@ jobs:
         username: iam
         password: ${{ secrets.YC_OAUTH_TOKEN }}
 
+    - name: Install Yandex Cloud CLI
+      run: |
+        curl -sSL https://storage.yandex-cloud.net/yandex-cloud-yeezy/install.sh | bash
+        echo "$HOME/.yandex-cloud/bin" >> $GITHUB_PATH
+
+    - name: Configure Yandex Cloud
+      run: |
+        yc config set token ${{ secrets.YC_OAUTH_TOKEN }}
+        yc config set folder-id ${{ secrets.YC_FOLDER_ID }}
+
     - name: Get container URLs and set environment variables
       id: container-urls
       run: |
         cat > get_urls.sh << 'EOF'
         #!/bin/bash
         services=("rag_service" "orchestrator" "tgbot_service" "validator" "yandexgpt_service")
-        
+        yc serverless container list
         for service in "${services[@]}"; do
             echo "Processing $service..."
             url=$(yc serverless container get "$service" | grep -oP 'url:\s*\K[^[:space:]]+' || echo "")
@@ -80,36 +90,29 @@ jobs:
 
           case $service in
             "orchestrator")
-              deploy_base="$deploy_base --environment YANDEX_GPT_URL=$YANDEX_GPT_URL"
-              deploy_base="$deploy_base --environment VALIDATOR_URL=$VALIDATOR_URL"
-              deploy_base="$deploy_base --environment RAG_URL=$RAG_URL"
+              deploy_base="$deploy_base --environment YANDEXGPT_URL=http://yandexgpt.containers.yandexcloud.net"
+              deploy_base="$deploy_base --environment VALIDATOR_URL=http://validator.containers.yandexcloud.net"
+              deploy_base="$deploy_base --environment RAG_URL=http://rag.containers.yandexcloud.net"
               ;;
             "tgbot")
-              deploy_base="$deploy_base --environment ORCHESTRATOR_URL=$ORCHESTRATOR_URL"
-              deploy_base="$deploy_base --connectivity external --concurrency 16"
-              ;;
-            "validator")
-              deploy_base="$deploy_base --environment ORCHESTRATOR_URL=$ORCHESTRATOR_URL"
-              ;;
-            "rag")  
-              deploy_base="$deploy_base --environment ORCHESTRATOR_URL=$ORCHESTRATOR_URL"
-              ;;
-            "yandexgpt")
-              deploy_base="$deploy_base --environment ORCHESTRATOR_URL=$ORCHESTRATOR_URL"
+              deploy_base="$deploy_base --environment ORCHESTRATOR_URL=http://orchestrator.containers.yandexcloud.net"
+              deploy_base="$deploy_base --connectivity external"
               ;;
           esac
           
-          # Выполняем деплой
           eval $deploy_base
           echo "$service deployed"
         done
 
     - name: Display final URLs
       run: |
-        echo "Deployment completed!"
-        echo "Container URLs:"
-        echo "   ORCHESTRATOR_URL: $ORCHESTRATOR_URL"
-        echo "   YANDEX_GPT_URL: $YANDEX_GPT_URL" 
-        echo "   VALIDATOR_URL: $VALIDATOR_URL"
-        echo "   RAG_URL: $RAG_URL"
-        echo "   TG_BOT_URL: $TG_BOT_URL"
+        echo "🎉 Deployment completed!"
+        echo "📋 Container internal DNS names:"
+        echo "   rag: http://rag.containers.yandexcloud.net"
+        echo "   orchestrator: http://orchestrator.containers.yandexcloud.net"
+        echo "   tgbot: http://tgbot.containers.yandexcloud.net"
+        echo "   validator: http://validator.containers.yandexcloud.net"
+        echo "   yandexgpt: http://yandexgpt.containers.yandexcloud.net"
+        
+        tgbot_url=$(yc serverless container get tgbot 2>/dev/null | grep -oP 'url:\s*\K[^[:space:]]+' || echo "not available yet")
+        echo "Public tgbot URL: $tgbot_url"
