@@ -1,35 +1,165 @@
-name: Build and Push Images
+name: Build and Deploy to Yandex Cloud
 
 on:
   push:
-    branches: [deploy_actions]
+    branches: [ lockbox_secrets ]
 
 env:
   REGISTRY_ID: ${{ secrets.YC_REGISTRY_ID }}
+  SERVICE_ACCOUNT_ID: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+  FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
 
 jobs:
-  build:
-    runs-on: ubuntu-22.04
+  deploy:
+    runs-on: ubuntu-latest
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Login to Yandex Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: cr.yandex
-        username: iam
-        password: ${{ secrets.YC_OAUTH_TOKEN }}
-
-    - name: Build and push images
+    - name: Execute deployment script
       run: |
-        services=("rag_service" "orchestrator" "tgbot_service" "validator" "yandexgpt_service")
+        curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
+        exec bash -l
+        export PATH="$HOME/.yandex-cloud/bin:$PATH"
+        yc --version
+
+    - name: Configure Yandex Cloud
+      run: |
+        export PATH="$HOME/.yandex-cloud/bin:$PATH"
+        yc config set token ${{ secrets.YC_OAUTH_TOKEN }}
+        yc config set folder-id $FOLDER_ID
+
+    - name: Login to Yandex Container Registry
+      run: |
+        # Используем IAM токен для Docker login
+        echo ${{ steps.iam-token.outputs.token }} | docker login cr.yandex -u iam --password-stdin
+
+    - name: Build and deploy containers
+      run: |
+        export PATH="$HOME/.yandex-cloud/bin:$PATH"
         
-        for service in "${services[@]}"; do
-          echo "Building $service..."
-          cd $service
-          docker build -t cr.yandex/$REGISTRY_ID/$service:latest .
-          docker push cr.yandex/$REGISTRY_ID/$service:latest
-          cd ..
+        # Ваш скрипт с небольшими исправлениями для GitHub Actions
+        cat > deploy.sh << 'EOF'
+        #!/bin/bash
+
+        REGISTRY_ID="$REGISTRY_ID"
+        SERVICE_ACCOUNT_ID="$SERVICE_ACCOUNT_ID"
+        FOLDER_ID="$FOLDER_ID"
+        SERVICES=("rag_service" "orchestrator" "tgbot_service" "validator" "yandexgpt_service")
+
+        extract_url() {
+            local data="$1"
+            echo "$data" | grep -oP 'url:\s*\K[^[:space:]]+'
+        }
+
+        get_container_url() {
+            local container_name="$1"
+            local data
+            data=$(yc serverless container get "$container_name" 2>/dev/null)
+            
+            if [ $? -eq 0 ]; then
+                extract_url "$data"
+            else
+                echo ""
+            fi
+        }
+
+        echo "Logging into Yandex Container Registry..."
+        # Используем IAM токен из GitHub Actions
+        YC_TOKEN=$(yc iam create-token)
+        docker login cr.yandex -u iam -p $YC_TOKEN
+
+        for service in "${SERVICES[@]}"; do
+            container_name="${service//_/-}"
+            
+            if ! yc serverless container get --name $container_name &>/dev/null; then
+                echo "Creating container $container_name..."
+                yc serverless container create --name $container_name
+            else
+                echo "Container $container_name already exists"
+            fi
         done
+
+        declare -A container_urls
+        for service in "${SERVICES[@]}"; do
+            container_name="${service//_/-}"
+            echo "Getting URL for $container_name..."
+            
+            url=$(get_container_url "$container_name")
+            url="${url%?}"
+            if [ -n "$url" ]; then
+                container_urls["$service"]=$url
+            else
+                echo "URL not found for $container_name"
+                container_urls["$service"]=""
+            fi
+        done
+
+        for service in "${SERVICES[@]}"; do
+            echo "Building $service..."
+            
+            cd $service
+            docker build -t cr.yandex/$REGISTRY_ID/$service:latest .
+            docker push cr.yandex/$REGISTRY_ID/$service:latest
+            cd ..
+            
+            container_name="${service//_/-}"
+            
+            deploy_cmd="yc serverless container revision deploy \
+                --container-name $container_name \
+                --image cr.yandex/$REGISTRY_ID/$service:latest \
+                --service-account-id $SERVICE_ACCOUNT_ID \
+                --execution-timeout 1m \
+                --cores 1 \
+                --memory 512MB \
+                --concurrency 4 \
+                --environment FOLDER_ID=$FOLDER_ID"
+            
+            case $service in
+                "orchestrator")
+                    if [ -n "${container_urls[yandexgpt_service]}" ]; then
+                        deploy_cmd="$deploy_cmd --environment LLM_URL=${container_urls[yandexgpt_service]}"
+                    fi
+                    if [ -n "${container_urls[validator]}" ]; then
+                        deploy_cmd="$deploy_cmd --environment VALIDATOR_URL=${container_urls[validator]}"
+                    fi
+                    if [ -n "${container_urls[rag_service]}" ]; then
+                        deploy_cmd="$deploy_cmd --environment RAG_URL=${container_urls[rag_service]}"
+                    fi
+                    ;;
+                "tgbot_service")
+                    deploy_cmd="$deploy_cmd --min-instances=1"
+                    if [ -n "${container_urls[orchestrator]}" ]; then
+                        deploy_cmd="$deploy_cmd --environment ORCHESTRATOR_URL=${container_urls[orchestrator]}"
+                    fi
+                    deploy_cmd="$deploy_cmd --connectivity external"
+                    ;;
+                "validator")
+                    if [ -n "${container_urls[orchestrator]}" ]; then
+                        deploy_cmd="$deploy_cmd --environment ORCHESTRATOR_URL=${container_urls[orchestrator]}"
+                    fi
+                    if [ -n "${container_urls[yandexgpt_service]}" ]; then
+                        deploy_cmd="$deploy_cmd --environment LLM_URL=${container_urls[yandexgpt_service]}"
+                    fi
+                    ;;
+                "rag_service")
+                    deploy_cmd="$deploy_cmd --min-instances=1"
+                    if [ -n "${container_urls[orchestrator]}" ]; then
+                        deploy_cmd="$deploy_cmd --environment ORCHESTRATOR_URL=${container_urls[orchestrator]}"
+                    fi
+                    ;;
+                "yandexgpt_service")
+                    if [ -n "${container_urls[orchestrator]}" ]; then
+                        deploy_cmd="$deploy_cmd --environment ORCHESTRATOR_URL=${container_urls[orchestrator]}"
+                    fi
+                    ;;
+            esac
+            
+            echo "Deploying $service..."
+            eval $deploy_cmd
+        done
+        EOF
+        
+        chmod +x deploy.sh
+        ./deploy.sh
