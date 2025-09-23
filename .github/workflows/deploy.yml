@@ -28,8 +28,7 @@ jobs:
       run: |
         curl -s https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -i $HOME/.yandex-cloud -n
         echo "$HOME/.yandex-cloud/bin" >> $GITHUB_PATH
-        ls $HOME/.yandex-cloud/bin
-        $HOME/.yandex-cloud/bin config set token ${{ secrets.YC_OAUTH_TOKEN }}
+        $HOME/.yandex-cloud/bin/yc config set token ${{ secrets.YC_OAUTH_TOKEN }}
 
         cat > deploy.sh << 'EOF'
         #!/bin/bash
