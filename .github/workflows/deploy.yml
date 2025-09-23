@@ -20,9 +20,8 @@ jobs:
     - name: Execute deployment script
       run: |
         curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
-        export PATH="$HOME/.yandex-cloud/bin:$PATH"
+        echo "$HOME/.yandex-cloud/bin" >> $GITHUB_PATH
         source ~/.bashrc
-        echo 'source /home/runner/yandex-cloud/completion.zsh.inc' >>  ~/.zshrc"
 
     - name: Configure Yandex Cloud
       run: |
