@@ -8,7 +8,6 @@ env:
   REGISTRY_ID: ${{ secrets.YC_REGISTRY_ID }}
   SERVICE_ACCOUNT_ID: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
   FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
-  SERVICES: '["rag_service", "orchestrator", "tgbot_service", "validator", "yandexgpt_service"]'
 
 jobs:
   deploy:
@@ -30,18 +29,53 @@ jobs:
         username: oauth
         password: ${{ secrets.YC_OAUTH_TOKEN }}
 
-    
-
     - name: Build docker images
       run: |
-        SERVICES_ARR=${{ env.SERVICES }}
-        for service in $(echo $SERVICES_ARR | jq -r '.[]'); do
-          echo "Building Docker image for $service..."
-          cd $service
-          docker build -t cr.yandex/${{ env.REGISTRY_ID }}/$service:latest .
-          docker push cr.yandex/${{ env.REGISTRY_ID }}/$service:latest
-          cd ..
-          echo "✅ $service image built and pushed successfully"
-        done
+        SERVICES=("rag_service" "orchestrator" "tgbot_service" "validator" "yandexgpt_service")
+
+        for service in "${SERVICES[@]}"; do
+            echo "Building $service..."
             
+            cd $service
+            docker build -t cr.yandex/$REGISTRY_ID/$service:latest .
+            docker push cr.yandex/$REGISTRY_ID/$service:latest
+            cd ..
+
+            echo "✅ $service image built and pushed successfully"            
         done
+    - name: Setup containers
+      run: |
+        SERVICES=("rag_service" "orchestrator" "tgbot_service" "validator" "yandexgpt_service")
+
+        for service in "${SERVICES[@]}"; do
+            container_name="${service//_/-}"
+            echo "Setting up container: $container_name"
+          
+          if ! yc serverless container get --name $container_name &>/dev/null; then
+            echo "Creating new container: $container_name"
+            yc serverless container create --name $container_name
+          else
+            echo "Container $container_name already exists"
+          fi
+        done
+    - name: Get container URLs
+      id: get-urls
+      run: |
+        SERVICES=("rag_service" "orchestrator" "tgbot_service" "validator" "yandexgpt_service")
+
+        echo "Getting container URLs..."
+        
+        for service in "${SERVICES[@]}"; do
+          container_name="${service//_/-}"
+          url=$(yc serverless container get --name $container_name --format json | jq -r '.url // empty')
+          
+          if [ -n "$url" ]; then
+            echo "URL for $service: $url"
+            clean_url="${url%?}"
+            echo "$service=$clean_url" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ URL not found for $container_name"
+            echo "$service=" >> $GITHUB_OUTPUT
+          fi
+        done
+      continue-on-error: true
