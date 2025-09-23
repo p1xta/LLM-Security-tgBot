@@ -17,22 +17,12 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Execute deployment script
-      run: |
-        curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
-        echo "$HOME/.yandex-cloud/bin" >> $GITHUB_PATH
-        source "/home/runner/.bashrc"
-
-    - name: Configure Yandex Cloud
-      run: |
-        export PATH="$HOME/.yandex-cloud/bin:$PATH"
-        yc config set token ${{ secrets.YC_OAUTH_TOKEN }}
-        yc config set folder-id $FOLDER_ID
-
-    - name: Login to Yandex Container Registry
-      run: |
-        # Используем IAM токен для Docker login
-        echo ${{ steps.iam-token.outputs.token }} | docker login cr.yandex -u iam --password-stdin
+    - name: Login to Yandex Container Registr
+      uses: docker/login-action@v3
+      with:
+        registry: cr.yandex
+        username: oauth
+        password: ${{ secrets.YC_OAUTH_TOKEN }}
 
     - name: Build and deploy containers
       run: |
