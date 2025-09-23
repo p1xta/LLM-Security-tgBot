@@ -26,7 +26,11 @@ jobs:
 
     - name: Build and deploy containers
       run: |
-        curl -s https://storage.yandexcloud.net/yandexcloud-"$HOME/.yandex-cloud/bin/yc"/install.sh | bash -s -- -i $HOME/.yandex-cloud -n
+        curl -s https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -i $HOME/.yandex-cloud -n
+        echo "$HOME/.yandex-cloud/bin" >> $GITHUB_PATH
+        echo "yc=$HOME/.yandex-cloud/bin/yc"
+        yc config set token ${{ secrets.YC_OAUTH_TOKEN }}
+
         cat > deploy.sh << 'EOF'
         #!/bin/bash
 
@@ -43,7 +47,7 @@ jobs:
         get_container_url() {
             local container_name="$1"
             local data
-            data=$("$HOME/.yandex-cloud/bin/yc" serverless container get "$container_name" 2>/dev/null)
+            data=$(yc serverless container get "$container_name" 2>/dev/null)
             
             if [ $? -eq 0 ]; then
                 extract_url "$data"
@@ -54,15 +58,15 @@ jobs:
 
         echo "Logging into Yandex Container Registry..."
         # Используем IAM токен из GitHub Actions
-        YC_TOKEN=$("$HOME/.yandex-cloud/bin/"$HOME/.yandex-cloud/bin/yc"" iam create-token)
+        YC_TOKEN=$(yc iam create-token)
         docker login cr.yandex -u iam -p $YC_TOKEN
 
         for service in "${SERVICES[@]}"; do
             container_name="${service//_/-}"
             
-            if ! "$HOME/.yandex-cloud/bin/yc" serverless container get --name $container_name &>/dev/null; then
+            if ! yc serverless container get --name $container_name &>/dev/null; then
                 echo "Creating container $container_name..."
-                "$HOME/.yandex-cloud/bin/yc" serverless container create --name $container_name
+                yc serverless container create --name $container_name
             else
                 echo "Container $container_name already exists"
             fi
@@ -93,7 +97,7 @@ jobs:
             
             container_name="${service//_/-}"
             
-            deploy_cmd=""$HOME/.yandex-cloud/bin/yc" serverless container revision deploy \
+            deploy_cmd="yc serverless container revision deploy \
                 --container-name $container_name \
                 --image cr.yandex/$REGISTRY_ID/$service:latest \
                 --service-account-id $SERVICE_ACCOUNT_ID \
