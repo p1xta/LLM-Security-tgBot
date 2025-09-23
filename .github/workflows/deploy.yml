@@ -24,13 +24,13 @@ jobs:
         username: oauth
         password: ${{ secrets.YC_OAUTH_TOKEN }}
 
+    - name: Install Yandex Cloud CLI
+      uses: nightstory/setup-yc@v1
+
     - name: Build and deploy containers
       run: |
-        curl -s https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -i $HOME/.yandex-cloud -n
-        echo "$HOME/.yandex-cloud/bin" >> $GITHUB_PATH
-        echo "$HOME/.yandex-cloud/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
         yc config set token ${{ secrets.YC_OAUTH_TOKEN }}
-
+        
         cat > deploy.sh << 'EOF'
         #!/bin/bash
 
