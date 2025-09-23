@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from services.orchestration import OrchestrationService
-from api.models.request import ProcessRequest
+from api.models.request import ProcessRequest, RAGUploadRequest
+from clients.rag_client import RAGClient
 from api.models.response import ProcessResponse
 from exceptions.specific import ValidationFailedError, ServiceUnavailableError
 
@@ -21,3 +22,8 @@ async def process_request(
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error {e}")
+
+@router.post("/upload")
+async def upload_files(payload: dict):
+        response = await RAGClient().upload(payload)
+        return response

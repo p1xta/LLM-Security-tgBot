@@ -1,6 +1,6 @@
 import os
-
-from fastapi import APIRouter, Depends, HTTPException
+import tempfile, shutil
+from fastapi import APIRouter, HTTPException, File, Form, UploadFile
 
 from clients.faiss_bridge import FAISSbridge
 from clients.s3_bridge import S3Bridge
@@ -8,6 +8,7 @@ from api.models.request import RAGRequest
 from api.models.response import RAGResponse
 from exceptions.specific import ValidationFailedError, ServiceUnavailableError
 from utils.get_secrets import get_all_secrets_payload
+
 
 router = APIRouter()
 
@@ -44,6 +45,36 @@ async def retrieve_context(
             "original_request": request.model_dump(),
             "chunks": [doc.page_content for doc in retrieved]
         }
+    except ValidationFailedError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except ServiceUnavailableError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error {e}")    
+
+
+@router.post("/upload")
+async def upload_file(
+    bucket: str = Form(...),
+    user_id: str = Form(...),
+    file: UploadFile = File(...)
+):
+    try:
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            shutil.copyfileobj(file.file, tmp)
+            tmp_path = tmp.name
+
+        s3_service.upload_to_s3(bucket, tmp_path, s3_key=f"{user_id}/{file.filename}")
+
+        docs = s3_service.download_from_s3(bucket, f"{user_id}/")
+        faiss_service.store_doc_vectors(docs)
+
+        return RAGResponse(
+            status="success",
+            message=f"Файл {file.filename} успешно загружен и проиндексирован.",
+            original_request={"bucket": bucket, "user_id": user_id, "file": file.filename},
+        )
+
     except ValidationFailedError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except ServiceUnavailableError as e:

@@ -25,7 +25,6 @@ def get_iam_token_on_YC_vm():
     return json_response['access_token']
 
 def get_all_secrets_payload(folder_id: Optional[str] = FOLDER_ID, timeout: int = 10) -> Dict[str, Dict[str, str]]:
-    print(FOLDER_ID)
     headers = {
         "Authorization": f"Bearer {get_iam_token_on_YC_vm()}",
         "Accept": "application/json",
