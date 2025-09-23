@@ -2,7 +2,7 @@ name: Build and Push Images
 
 on:
   push:
-    branches: [lockbox_secrets]
+    branches: [deploy_actions]
 
 env:
   REGISTRY_ID: ${{ secrets.YC_REGISTRY_ID }}
