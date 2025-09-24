@@ -32,8 +32,6 @@ jobs:
         username: oauth
         password: ${{ secrets.YC_OAUTH_TOKEN }}
 
-
-
     - name: Get container URLs
       id: get-urls
       run: |
@@ -42,7 +40,7 @@ jobs:
         echo "Getting container URLs..."
 
         for service in "${SERVICES[@]}"; do
-          container_name="${service}"
+          container_name="${service//_/-}"
           url=$(yc serverless container get --folder-id ${{ secrets.YC_FOLDER_ID }} --name $container_name --format json | jq -r '.url // empty')
           echo "URL for $service: $url"
           clean_url="${url%?}"
