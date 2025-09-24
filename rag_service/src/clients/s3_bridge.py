@@ -4,7 +4,7 @@ import boto3
 from pathlib import Path
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.document_loaders import TextLoader
-from langchain_community.document_loaders import BSHTMLLoader
+from langchain_community.document_loaders import UnstructuredHTMLLoader
 
 from log.logger import logger
 
@@ -15,7 +15,7 @@ def read_file(filepath):
     elif filepath.endswith(".txt"):
         loader = TextLoader(filepath, encoding="utf-8")
     elif filepath.endswith(".html", ".htm"):
-        loader = BSHTMLLoader(filepath, open_encoding="utf-8", get_text_separator='\n')
+        loader = UnstructuredHTMLLoader(filepath)
     
     loaded = loader.load()
     

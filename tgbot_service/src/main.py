@@ -16,7 +16,6 @@ settings = get_settings()
 
 secrets_dict = get_all_secrets_payload()
 TELEGRAM_TOKEN = secrets_dict["TELEGRAM_TOKEN"]
-TELEGRAM_TOKEN = secrets_dict["S3_BUCKET"]
 WEBHOOK_DOMAIN = os.environ.get("WEBHOOK_URL", "")
 ORCHESTRATOR_URL = settings.ORCHESTRATOR_URL
 
@@ -86,10 +85,15 @@ async def handle_document(update: Update, _: ContextTypes.DEFAULT_TYPE):
 
     async with httpx.AsyncClient() as client:
         try:
+            iam_token = await get_iam_token_on_YC_vm(client)
+            print(iam_token)
             with open(file_path, "rb") as f:
                 file_content = f.read()
                 response = await client.post(
                     f"{ORCHESTRATOR_URL}/upload",
+                    headers={
+                        "Authorization": f"Bearer {iam_token}"
+                    },
                     data={"user_id": str(user_id), "bucket": "tgbot-storage"},
                     files={"file": (document.file_name, file_content, document.mime_type)},
                     timeout=60,
@@ -143,7 +147,10 @@ async def handle_message(update: Update, _: ContextTypes.DEFAULT_TYPE):
 
 if __name__ == "__main__":
     bot_builder.add_handler(CommandHandler("start", start))
+    print("start")
     bot_builder.add_handler(CommandHandler("upload", start_upload))
+    print("upload")
     bot_builder.add_handler(MessageHandler(filters.Document.ALL, handle_document))
+    print("handle_document")
     bot_builder.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     uvicorn.run(app, host="0.0.0.0", port=int(os.environ['PORT']))

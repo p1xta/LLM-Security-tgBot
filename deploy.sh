@@ -3,7 +3,6 @@
 REGISTRY_ID="crp4q1r2fo7v9m0j1vvh"
 SERVICE_ACCOUNT_ID="ajelb450lc8haab6f4u7"
 SERVICES=("rag_service" "orchestrator" "tgbot_service" "validator" "yandexgpt_service")
-
 extract_url() {
     local data="$1"
     echo "$data" | grep -oP 'url:\s*\K[^[:space:]]+'
@@ -85,11 +84,13 @@ for service in "${SERVICES[@]}"; do
             fi
             ;;
         "tgbot_service")
-            deploy_cmd="$deploy_cmd --min-instances=1"
+            deploy_cmd="$deploy_cmd --min-instances=1"  
             if [ -n "${container_urls[orchestrator]}" ]; then
                 deploy_cmd="$deploy_cmd --environment ORCHESTRATOR_URL=${container_urls[orchestrator]}"
             fi
-            deploy_cmd="$deploy_cmd --connectivity external"
+            if [ -n "${container_urls[tgbot_service]}" ]; then
+                deploy_cmd="$deploy_cmd --environment WEBHOOK_URL=${container_urls[tgbot_service]}"
+            fi
             ;;
         "validator")
             if [ -n "${container_urls[orchestrator]}" ]; then
