@@ -50,7 +50,7 @@ jobs:
 
     - name: Deploy services
       run: |
-        SERVICES=("rag-service" "orchestrator" "tgbot-service" "validator" "yandexgpt-service")
+        SERVICES=("rag_service" "orchestrator" "tgbot_service" "validator" "yandexgpt_service")
         
         get_url() {
           local service=$1
@@ -64,7 +64,7 @@ jobs:
         }
 
         for service in "${SERVICES[@]}"; do
-          container_name="${service}"
+          container_name="${service//_/-}"
           echo "🚀 Deploying $service to container $container_name"
           
           deploy_cmd="yc serverless container revision deploy \
