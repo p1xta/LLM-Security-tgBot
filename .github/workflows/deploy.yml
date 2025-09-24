@@ -89,7 +89,7 @@ jobs:
             --cores 1 \
             --memory 512MB \
             --concurrency 4 \
-            --environment FOLDER_ID=${{ secrets.YC_FOLDER_ID }}"
+            --folder-id FOLDER_ID=${{ secrets.YC_FOLDER_ID }}"
           
           case $service in
             "orchestrator")
