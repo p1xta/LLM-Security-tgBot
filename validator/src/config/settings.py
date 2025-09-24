@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     # Настройки приложения
     DEBUG: bool = False
     LOG_LEVEL: str = "INFO"
-    REQUEST_TIMEOUT: int = 30
+    REQUEST_TIMEOUT: int = 120
     load_dotenv()
     MODERATOR_URL: str = os.environ.get("LLM_URL", "localhost:8003")
 

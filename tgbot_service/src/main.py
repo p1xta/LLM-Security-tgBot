@@ -96,7 +96,7 @@ async def handle_document(update: Update, _: ContextTypes.DEFAULT_TYPE):
                     },
                     data={"user_id": str(user_id), "bucket": "tgbot-storage"},
                     files={"file": (document.file_name, file_content, document.mime_type)},
-                    timeout=60,
+                    timeout=300,
                 )
             data = response.json()
             reply = data.get("message", "⚠️ Ошибка обработки")
@@ -133,7 +133,7 @@ async def handle_message(update: Update, _: ContextTypes.DEFAULT_TYPE):
                     "text": user_text,
                     "timestamp": message_date
                 },
-                timeout=30,
+                timeout=300,
             )
             data = response.json()
             reply = data.get("message", "⚠️ Ошибка обработки")

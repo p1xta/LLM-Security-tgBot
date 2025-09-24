@@ -26,7 +26,7 @@ class RAGClient(BaseClient):
                 },
                 data=data,
                 files=files,
-                timeout=60
+                timeout=self.timeout
             )
             response.raise_for_status()
             return response.json()

@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     # Настройки приложения
     DEBUG: bool = False
     LOG_LEVEL: str = "INFO"
-    REQUEST_TIMEOUT: int = 30
+    REQUEST_TIMEOUT: int = 120
 
     class Config:
         env_file = ".env"

@@ -11,7 +11,8 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="Orchestrator Service",
         version="1.0.0",
-        debug=settings.DEBUG
+        debug=settings.DEBUG,
+        max_upload_size=100 * 1024 * 1024
     )
     
     app.include_router(api_router)

@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     # Настройки приложения
     DEBUG: bool = False
     LOG_LEVEL: str = "INFO"
-    REQUEST_TIMEOUT: int = 30
+    REQUEST_TIMEOUT: int = 120
     
     # URL сервисов
     VALIDATOR_URL: str = os.environ.get("VALIDATOR_URL", "http://localhost:8001")

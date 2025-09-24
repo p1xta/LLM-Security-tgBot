@@ -6,7 +6,7 @@ from api.routes import main_router
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="Yandex GPT Service", version="1.0.0")
+    app = FastAPI(title="Yandex GPT Service", version="1.0.0", max_upload_size=100 * 1024 * 1024)
     
     app.include_router(main_router)
     

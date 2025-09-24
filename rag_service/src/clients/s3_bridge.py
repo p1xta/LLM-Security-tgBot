@@ -10,22 +10,27 @@ from log.logger import logger
 
 
 def read_file(filepath):
-    if filepath.endswith(".pdf"):
-        loader = PyPDFLoader(filepath)
-    elif filepath.endswith(".txt"):
-        loader = TextLoader(filepath, encoding="utf-8")
-    elif filepath.endswith(".html", ".htm"):
-        loader = UnstructuredHTMLLoader(filepath)
-    
-    loaded = loader.load()
-    
-    valid_docs = [
-        doc for doc in loaded
-        if hasattr(doc, 'page_content') and
-        isinstance(doc.page_content, str) and
-        doc.page_content.strip()
-    ]
-    
+    valid_docs = []
+    try:
+        if filepath.endswith(".pdf"):
+            loader = PyPDFLoader(filepath)
+        elif filepath.endswith(".txt"):
+            loader = TextLoader(filepath, encoding="utf-8")
+        elif filepath.endswith(".html", ".htm"):
+            loader = UnstructuredHTMLLoader(filepath, mode="all")
+        
+        logger.info(f"Файл {filepath} был распаршен")
+        loaded = loader.load()
+        
+        valid_docs = [
+            doc for doc in loaded
+            if hasattr(doc, 'page_content') and
+            isinstance(doc.page_content, str) and
+            doc.page_content.strip()
+        ]
+    except Exception as e:
+        logger.error(f"Ошибка при загрузке файла {filepath}: {e}")
+        return [] # Return an empty list on error to prevent crash
     return valid_docs
 
 class S3Bridge:
@@ -69,7 +74,7 @@ class S3Bridge:
                 local_path = os.path.join(tmpdir, os.path.basename(key))
                 try:
                     self.client.download_file(s3_bucket, key, local_path)
-                    
+                    logger.info(f"Файл {key} был скачан")
                     docs = read_file(local_path)
                     
                     if os.path.getsize(local_path) == 0:
