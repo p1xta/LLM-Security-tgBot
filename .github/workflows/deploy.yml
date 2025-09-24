@@ -65,16 +65,6 @@ jobs:
 
     - name: Deploy services
       run: |
-        
-        echo "=== Отладочная информация ==="
-        echo "URL для rag_service: '${{ steps.get-urls.outputs.rag_service }}'"
-        echo "URL для orchestrator: '${{ steps.get-urls.outputs.orchestrator }}'"
-        echo "URL для tgbot_service: '${{ steps.get-urls.outputs.tgbot_service }}'"
-        echo "URL для validator: '${{ steps.get-urls.outputs.validator }}'"
-        echo "URL для yandexgpt_service: '${{ steps.get-urls.outputs.yandexgpt_service }}'"
-        
-        echo "============================="
-
         SERVICES=("rag_service" "orchestrator" "tgbot_service" "validator" "yandexgpt_service")
         
         get_url() {
@@ -93,6 +83,7 @@ jobs:
           echo "🚀 Deploying $service to container $container_name"
           
           deploy_cmd="yc serverless container revision deploy \
+            --folder-id ${{ secrets.YC_FOLDER_ID }}
             --container-name $container_name \
             --image cr.yandex/${{ secrets.YC_REGISTRY_ID }}/$service:latest \
             --service-account-id ${{ secrets.YC_SERVICE_ACCOUNT_ID }} \
@@ -100,7 +91,6 @@ jobs:
             --cores 1 \
             --memory 512MB \
             --concurrency 4 \
-            --folder-id ${{ secrets.YC_FOLDER_ID }}
           
           case $service in
             "orchestrator")
