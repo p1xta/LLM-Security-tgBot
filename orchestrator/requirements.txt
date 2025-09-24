@@ -4,3 +4,4 @@ pydantic
 datetime
 fastapi
 pydantic_settings
+python-multipart
