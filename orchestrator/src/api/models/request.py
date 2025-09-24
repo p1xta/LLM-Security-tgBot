@@ -25,3 +25,19 @@ class ProcessRequest(BaseModel):
                 "metadata": {"language": "ru"}
             }
         }
+
+class RAGUploadRequest(BaseModel):
+    """Запрос на сохранение файлов в RAG сервис"""
+
+    bucket: str = Field(..., description="Название S3 bucket")
+    user_id: str = Field(..., description="Идентификатор пользователя")
+    metadata: Optional[Dict[str, Any]] = Field(None, description="Дополнительные метаданные")
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "bucket": "documents-bucket",
+                "user_id": "user_123",
+                "metadata": {"request_id": "req_987"}
+            }
+        }

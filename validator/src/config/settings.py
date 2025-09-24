@@ -1,6 +1,7 @@
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 import os
+from dotenv import load_dotenv
 
 
 class Settings(BaseSettings):
@@ -8,6 +9,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     LOG_LEVEL: str = "INFO"
     REQUEST_TIMEOUT: int = 30
+    load_dotenv()
     MODERATOR_URL: str = os.environ.get("LLM_URL", "localhost:8003")
 
     class Config:

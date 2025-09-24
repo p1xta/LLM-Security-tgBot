@@ -16,9 +16,12 @@ settings = get_settings()
 
 secrets_dict = get_all_secrets_payload()
 TELEGRAM_TOKEN = secrets_dict["TELEGRAM_TOKEN"]
+TELEGRAM_TOKEN = secrets_dict["S3_BUCKET"]
 WEBHOOK_DOMAIN = os.environ.get("WEBHOOK_URL", "")
 ORCHESTRATOR_URL = settings.ORCHESTRATOR_URL
 
+# --- состояния пользователей ---
+user_state = {}  # user_id -> "state"
 
 bot_builder = (
     Application.builder()
@@ -57,6 +60,49 @@ async def start(update: Update, _: ContextTypes.DEFAULT_TYPE):
     logger.info(f"Пользователь {update.message.from_user} вызвал команду /start")
     await update.message.reply_text("Привет 👋 Я корпоративный ассистент. Напиши вопрос.")
 
+async def start_upload(update: Update, _: ContextTypes.DEFAULT_TYPE):
+    user_id = update.message.from_user.id
+    user_state[user_id] = "awaiting_file"
+    logger.info(f"Пользователь {user_id} начал процесс загрузки файлов")
+    await update.message.reply_text("📂 Пришлите документ, который нужно загрузить.")
+
+async def handle_document(update: Update, _: ContextTypes.DEFAULT_TYPE):
+    user_id = update.message.from_user.id
+
+    if user_state.get(user_id) != "awaiting_file":
+        await update.message.reply_text("⚠️ Чтобы загрузить документ, сначала вызовите /upload")
+        return
+
+    document = update.message.document
+    if not document:
+        await update.message.reply_text("❌ Сообщение не содержит документа.")
+        return
+
+    file = await document.get_file()
+    file_path = f"/tmp/{document.file_name}"
+    await file.download_to_drive(file_path)
+
+    logger.info(f"Пользователь {user_id} загрузил файл {document.file_name}")
+
+    async with httpx.AsyncClient() as client:
+        try:
+            with open(file_path, "rb") as f:
+                file_content = f.read()
+                response = await client.post(
+                    f"{ORCHESTRATOR_URL}/upload",
+                    data={"user_id": str(user_id), "bucket": "tgbot-storage"},
+                    files={"file": (document.file_name, file_content, document.mime_type)},
+                    timeout=60,
+                )
+            data = response.json()
+            reply = data.get("message", "⚠️ Ошибка обработки")
+            logger.info(f"Ответ от оркестратора для {user_id}: {reply}")
+        except Exception as e:
+            reply = f"❌ Сервис недоступен: {e}"
+            logger.error(f"Ошибка при загрузке файла от {user_id}: {e}")
+
+    user_state.pop(user_id, None)
+    await update.message.reply_text(reply)
 
 async def handle_message(update: Update, _: ContextTypes.DEFAULT_TYPE):
     user_text = update.message.text
@@ -91,11 +137,13 @@ async def handle_message(update: Update, _: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             reply = f"❌ Сервис недоступен: {e}"
             logger.error(f"Ошибка при запросе к оркестратору: {e}")
-    #await processing_message.delete()
+
     await processing_message.edit_text(reply)
 
 
 if __name__ == "__main__":
     bot_builder.add_handler(CommandHandler("start", start))
+    bot_builder.add_handler(CommandHandler("upload", start_upload))
+    bot_builder.add_handler(MessageHandler(filters.Document.ALL, handle_document))
     bot_builder.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     uvicorn.run(app, host="0.0.0.0", port=int(os.environ['PORT']))
