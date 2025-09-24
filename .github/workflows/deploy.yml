@@ -65,6 +65,15 @@ jobs:
 
     - name: Deploy services
       run: |
+        
+        echo "=== Отладочная информация ==="
+        echo "URL для rag_service: '${{ steps.get-urls.outputs.rag_service }}'"
+        echo "URL для orchestrator: '${{ steps.get-urls.outputs.orchestrator }}'"
+        echo "URL для tgbot_service: '${{ steps.get-urls.outputs.tgbot_service }}'"
+        echo "URL для validator: '${{ steps.get-urls.outputs.validator }}'"
+        echo "URL для yandexgpt_service: '${{ steps.get-urls.outputs.yandexgpt_service }}'"
+        echo "============================="
+        
         SERVICES=("rag_service" "orchestrator" "tgbot_service" "validator" "yandexgpt_service")
         
         get_url() {
@@ -90,7 +99,7 @@ jobs:
             --cores 1 \
             --memory 512MB \
             --concurrency 4 \
-            --folder-id FOLDER_ID=${{ secrets.YC_FOLDER_ID }}"
+            --folder-id ${{ secrets.YC_FOLDER_ID }}
           
           case $service in
             "orchestrator")
