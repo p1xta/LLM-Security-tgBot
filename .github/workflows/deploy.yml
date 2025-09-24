@@ -55,7 +55,7 @@ jobs:
         echo "Getting container URLs..."
         
         for service in "${SERVICES[@]}"; do
-          url=$(yc serverless container get --name $servise --format json | jq -r '.url // empty')
+          url=$(yc serverless container get --folder-id ${{ secrets.YC_FOLDER_ID }} --name $servise --format json | jq -r '.url // empty')
           echo "URL for $service: $url"
           clean_url="${url%?}"
           echo "$service=$clean_url" >> $GITHUB_OUTPUT
