@@ -90,7 +90,7 @@ jobs:
             --execution-timeout 1m \
             --cores 1 \
             --memory 512MB \
-            --concurrency 4 \
+            --concurrency 4"
           
           case $service in
             "orchestrator")
