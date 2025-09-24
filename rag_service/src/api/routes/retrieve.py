@@ -33,7 +33,6 @@ async def retrieve_context(
     request: RAGRequest,
 ):
     try:
-        print(request)
         docs = s3_service.download_from_s3(s3_bucket=request.bucket, s3_folder=request.user_id)
         if not docs:
             logger.info("Документы в хранилище не найдены.")
@@ -88,5 +87,50 @@ async def upload(
     except ServiceUnavailableError as e:
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
-        print(e)
+        logger.error(f"Error in upload: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error {e}")
+
+@router.post("/delete")
+async def upload(
+    bucket: str = Form(...),
+    user_id: str = Form(...),
+    file_name: str = Form(...),
+):
+    try:
+        s3_service.delete_from_s3(bucket, user_id, file_name)
+        return {
+            "status":"success",
+            "message":f"Файл {file_name} успешно удален.",
+            "original_request":{"bucket": bucket, "user_id": user_id, "file_name": file_name},
+        }
+
+    except ValidationFailedError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except ServiceUnavailableError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error in delete: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error {e}")
+
+@router.post("/get_filenames")
+async def get_filenames(
+    bucket: str = Form(...),
+    user_id: str = Form(...),
+):
+    try:
+        files = s3_service.get_loaded_filenames(bucket, f"{user_id}")
+
+        return {
+            "status":"success",
+            "files":files,
+            "message": f"Найдено {len(files)} файлов." if files else "Файлы не найдены.",
+            "original_request":{"bucket": bucket, "user_id": user_id},
+        }
+
+    except ValidationFailedError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except ServiceUnavailableError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error in get_filenames: {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error {e}")

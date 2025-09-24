@@ -48,6 +48,18 @@ class S3Bridge:
         except Exception as e:
             logger.error(f"Ошибка загрузки файла: {e}")
 
+    def delete_from_s3(self, s3_bucket: str, user_id: str, file_name: str):
+        try:
+            self.client.delete_object(
+                Bucket=s3_bucket, 
+                Key=f"{user_id}/{file_name}"
+            )
+            logger.info(f"Файл {file_name} успешно удален из bucket {s3_bucket}.")
+        except FileNotFoundError:
+            logger.error(f"Файл {file_name} не найден.")
+        except Exception as e:
+            logger.error(f"Ошибка загрузки файла: {e}")
+
     def download_from_s3(self, s3_bucket: str, s3_folder: str = ""):
         try:
             objects = self.client.list_objects_v2(
@@ -85,3 +97,28 @@ class S3Bridge:
                     continue
 
             return local_files
+
+    def get_loaded_filenames(self, s3_bucket: str, s3_folder: str = "") -> list:
+        try:
+            objects = self.client.list_objects_v2(
+                Bucket=s3_bucket,
+                Prefix=s3_folder
+            )
+        except Exception as e:
+            logger.error(f"Ошибка подключения: {e}")
+            return []
+
+        if "Contents" not in objects:
+            return []
+
+        filenames = []
+        for obj in objects["Contents"]:
+            key = obj.get("Key")
+            size = obj.get("Size", 0)
+
+            if not key or key.endswith("/") or size == 0:
+                continue
+
+            filenames.append(os.path.basename(key))
+
+        return filenames
