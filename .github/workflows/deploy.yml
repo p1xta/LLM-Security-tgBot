@@ -111,7 +111,7 @@ jobs:
               
             "tgbot_service")
               orchestrator_url=$(get_url "orchestrator")
-              deploy_cmd="$deploy_cmd --min-instances=1 --connectivity external"
+              deploy_cmd="$deploy_cmd --min-instances=1"
               if [ -n "$orchestrator_url" ]; then
                 deploy_cmd="$deploy_cmd --environment ORCHESTRATOR_URL=$orchestrator_url"
               fi
