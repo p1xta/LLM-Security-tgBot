@@ -89,7 +89,8 @@ jobs:
             --service-account-id ${{ secrets.YC_SERVICE_ACCOUNT_ID }} \
             --execution-timeout 3m \
             --cores 1 \
-            --concurrency 4"
+            --concurrency 1" \
+            --environment FOLDER_ID=$FOLDER_ID"
           
           case $service in
             "orchestrator")
