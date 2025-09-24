@@ -2,7 +2,7 @@ name: Build and Deploy to Yandex Cloud
 
 on:
   push:
-    branches: [ deploy_actions ]
+    branches: [ lockbox_secrets ]
 
 env:
   REGISTRY_ID: ${{ secrets.YC_REGISTRY_ID }}
