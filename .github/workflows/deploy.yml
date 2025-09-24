@@ -55,13 +55,97 @@ jobs:
         echo "Getting container URLs..."
         
         for service in "${SERVICES[@]}"; do
-          url=$(yc serverless container get --name $container_name --format json | jq -r '.url // empty')
-          
-          if [ -n "$url" ]; then
-            echo "URL for $service: $url"
-            clean_url="${url%?}"
-          else
-            echo "⚠️ URL not found for $container_name"
-          fi
+          url=$(yc serverless container get --name $SERVICES --format json | jq -r '.url // empty')
+          echo "URL for $service: $url"
+          clean_url="${url%?}"
+          echo "$service=$clean_url" >> $GITHUB_OUTPUT
         done
       continue-on-error: true
+
+    - name: Deploy services
+      run: |
+        SERVICES=("rag_service" "orchestrator" "tgbot_service" "validator" "yandexgpt_service")
+        
+        get_url() {
+          local service=$1
+          case $service in
+            "rag_service") echo "${{ steps.get-urls.outputs.rag_service }}";;
+            "orchestrator") echo "${{ steps.get-urls.outputs.orchestrator }}";;
+            "tgbot_service") echo "${{ steps.get-urls.outputs.tgbot_service }}";;
+            "validator") echo "${{ steps.get-urls.outputs.validator }}";;
+            "yandexgpt_service") echo "${{ steps.get-urls.outputs.yandexgpt_service }}";;
+          esac
+        }
+
+        for service in "${SERVICES[@]}"; do
+          container_name="${service}"
+          echo "🚀 Deploying $service to container $container_name"
+          
+          deploy_cmd="yc serverless container revision deploy \
+            --container-name $container_name \
+            --image cr.yandex/${{ env.REGISTRY_ID }}/$service:latest \
+            --service-account-id ${{ env.SERVICE_ACCOUNT_ID }} \
+            --execution-timeout 1m \
+            --cores 1 \
+            --memory 512MB \
+            --concurrency 4 \
+            --environment FOLDER_ID=${{ env.FOLDER_ID }}"
+          
+          case $service in
+            "orchestrator")
+              llm_url=$(get_url "yandexgpt_service")
+              validator_url=$(get_url "validator")
+              rag_url=$(get_url "rag_service")
+              
+              if [ -n "$llm_url" ]; then
+                deploy_cmd="$deploy_cmd --environment LLM_URL=$llm_url"
+              fi
+              if [ -n "$validator_url" ]; then
+                deploy_cmd="$deploy_cmd --environment VALIDATOR_URL=$validator_url"
+              fi
+              if [ -n "$rag_url" ]; then
+                deploy_cmd="$deploy_cmd --environment RAG_URL=$rag_url"
+              fi
+              ;;
+              
+            "tgbot_service")
+              orchestrator_url=$(get_url "orchestrator")
+              deploy_cmd="$deploy_cmd --min-instances=1 --connectivity external"
+              if [ -n "$orchestrator_url" ]; then
+                deploy_cmd="$deploy_cmd --environment ORCHESTRATOR_URL=$orchestrator_url"
+              fi
+              ;;
+              
+            "validator")
+              orchestrator_url=$(get_url "orchestrator")
+              llm_url=$(get_url "yandexgpt_service")
+              
+              if [ -n "$orchestrator_url" ]; then
+                deploy_cmd="$deploy_cmd --environment ORCHESTRATOR_URL=$orchestrator_url"
+              fi
+              if [ -n "$llm_url" ]; then
+                deploy_cmd="$deploy_cmd --environment LLM_URL=$llm_url"
+              fi
+              ;;
+              
+            "rag_service")
+              orchestrator_url=$(get_url "orchestrator")
+              deploy_cmd="$deploy_cmd --min-instances=1"
+              if [ -n "$orchestrator_url" ]; then
+                deploy_cmd="$deploy_cmd --environment ORCHESTRATOR_URL=$orchestrator_url"
+              fi
+              ;;
+              
+            "yandexgpt_service")
+              orchestrator_url=$(get_url "orchestrator")
+              if [ -n "$orchestrator_url" ]; then
+                deploy_cmd="$deploy_cmd --environment ORCHESTRATOR_URL=$orchestrator_url"
+              fi
+              ;;
+          esac
+          
+          echo "Running: $deploy_cmd"
+          eval $deploy_cmd
+          echo "✅ $service deployed successfully!"
+          echo "---"
+        done
