@@ -72,8 +72,9 @@ jobs:
         echo "URL для tgbot_service: '${{ steps.get-urls.outputs.tgbot_service }}'"
         echo "URL для validator: '${{ steps.get-urls.outputs.validator }}'"
         echo "URL для yandexgpt_service: '${{ steps.get-urls.outputs.yandexgpt_service }}'"
-        echo "============================="
         
+        echo "============================="
+
         SERVICES=("rag_service" "orchestrator" "tgbot_service" "validator" "yandexgpt_service")
         
         get_url() {
