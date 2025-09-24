@@ -44,3 +44,43 @@ async def upload(
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error {e}")
+
+@router.post("/get_filenames")
+async def get_filenames(
+    bucket: str = Form(...),
+    user_id: str = Form(...),
+):
+    try:
+        result = await RAGClient().get_filenames(
+            bucket=bucket,
+            user_id=user_id,
+        )
+        return result
+
+    except ValidationFailedError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except ServiceUnavailableError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error {e}")
+
+@router.post("/delete_file")
+async def delete(
+    bucket: str = Form(...),
+    user_id: str = Form(...),
+    file_name: str = Form(...)
+):
+    try:
+        result = await RAGClient().delete(
+            bucket=bucket,
+            user_id=user_id,
+            file_name=file_name,
+        )
+        return result
+
+    except ValidationFailedError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except ServiceUnavailableError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error {e}")

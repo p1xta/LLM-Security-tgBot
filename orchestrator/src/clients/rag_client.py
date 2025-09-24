@@ -10,7 +10,6 @@ class RAGClient(BaseClient):
         super().__init__(settings.RAG_URL)
     
     async def retrieve(self, payload: dict) -> dict:
-        print(payload)
         return await self._post("/retrieve", payload)
 
     async def upload(self, bucket: str, user_id: str, file):
@@ -26,6 +25,36 @@ class RAGClient(BaseClient):
                 },
                 data=data,
                 files=files,
+                timeout=60
+            )
+            response.raise_for_status()
+            return response.json()
+        
+    async def delete(self, bucket: str, user_id: str, file_name: str):
+        async with httpx.AsyncClient() as client:
+            iam_token = await get_iam_token_on_YC_vm(client)
+            data = {"bucket": bucket, "user_id": user_id, "file_name": file_name}
+            response = await client.post(
+                f"{self.base_url}/delete",
+                headers={
+                    "Authorization": f"Bearer {iam_token}"
+                },
+                data=data,
+                timeout=60
+            )
+            response.raise_for_status()
+            return response.json()
+
+    async def get_filenames(self, bucket: str, user_id: str):
+        async with httpx.AsyncClient() as client:
+            iam_token = await get_iam_token_on_YC_vm(client)
+            data = {"bucket": bucket, "user_id": user_id}
+            response = await client.post(
+                f"{self.base_url}/get_filenames",
+                headers={
+                    "Authorization": f"Bearer {iam_token}"
+                },
+                data=data,
                 timeout=60
             )
             response.raise_for_status()

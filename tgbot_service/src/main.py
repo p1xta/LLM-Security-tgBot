@@ -2,10 +2,10 @@ import os
 from contextlib import asynccontextmanager
 from http import HTTPStatus
 from fastapi import FastAPI, Request, Response
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 import httpx
 import uvicorn
-from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
+from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, CallbackQueryHandler, filters
 
 from config.settings import get_settings
 from utils.get_secrets import get_all_secrets_payload
@@ -16,6 +16,7 @@ settings = get_settings()
 
 secrets_dict = get_all_secrets_payload()
 TELEGRAM_TOKEN = secrets_dict["TELEGRAM_TOKEN"]
+S3_BUCKET = secrets_dict["S3_BUCKET"]
 WEBHOOK_DOMAIN = os.environ.get("WEBHOOK_URL", "")
 ORCHESTRATOR_URL = settings.ORCHESTRATOR_URL
 
@@ -65,6 +66,37 @@ async def start_upload(update: Update, _: ContextTypes.DEFAULT_TYPE):
     logger.info(f"Пользователь {user_id} начал процесс загрузки файлов")
     await update.message.reply_text("📂 Пришлите документ, который нужно загрузить.")
 
+async def start_delete(update: Update, _: ContextTypes.DEFAULT_TYPE):
+    user_id = update.message.from_user.id
+
+    async with httpx.AsyncClient() as client:
+        try:
+            iam_token = await get_iam_token_on_YC_vm(client)
+            response = await client.post(
+                f"{ORCHESTRATOR_URL}/get_filenames",
+                headers={"Authorization": f"Bearer {iam_token}"},
+                data={"bucket": S3_BUCKET, "user_id": str(user_id)},
+                timeout=30,
+            )
+            data = response.json()
+            files = data.get("files", [])
+
+            if not files:
+                await update.message.reply_text("Файлы не найдены.")
+                return
+
+            keyboard = [
+                [InlineKeyboardButton(f, callback_data=f"delete:{f}")]
+                for f in files
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await update.message.reply_text(
+                "Выберите файл для удаления:", reply_markup=reply_markup
+            )
+        except Exception as e:
+            logger.error(f"Ошибка при получении списка файлов: {e}")
+            await update.message.reply_text(f"❌ Не удалось получить список файлов: {e}")
+
 async def handle_document(update: Update, _: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
 
@@ -94,7 +126,7 @@ async def handle_document(update: Update, _: ContextTypes.DEFAULT_TYPE):
                     headers={
                         "Authorization": f"Bearer {iam_token}"
                     },
-                    data={"user_id": str(user_id), "bucket": "tgbot-storage"},
+                    data={"user_id": str(user_id), "bucket": S3_BUCKET},
                     files={"file": (document.file_name, file_content, document.mime_type)},
                     timeout=60,
                 )
@@ -107,6 +139,36 @@ async def handle_document(update: Update, _: ContextTypes.DEFAULT_TYPE):
 
     user_state.pop(user_id, None)
     await update.message.reply_text(reply)
+
+async def handle_delete_callback(update: Update, _: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    user_id = query.from_user.id
+    data = query.data
+
+    if not data.startswith("delete:"):
+        return
+
+    file_name = data.split("delete:")[1]
+
+    async with httpx.AsyncClient() as client:
+        try:
+            iam_token = await get_iam_token_on_YC_vm(client)
+            response = await client.post(
+                f"{ORCHESTRATOR_URL}/delete_file",
+                headers={
+                    "Authorization": f"Bearer {iam_token}"
+                },
+                data={"bucket": S3_BUCKET, "user_id": str(user_id), "file_name": file_name},
+                timeout=30,
+            )
+            result = response.json()
+            msg = result.get("message", f"Файл {file_name} удалён.")
+        except Exception as e:
+            logger.error(f"Ошибка при удалении файла {file_name}: {e}")
+            msg = f"❌ Не удалось удалить файл {file_name}: {e}"
+
+    await query.edit_message_text(msg)
 
 async def handle_message(update: Update, _: ContextTypes.DEFAULT_TYPE):
     user_text = update.message.text
@@ -147,10 +209,9 @@ async def handle_message(update: Update, _: ContextTypes.DEFAULT_TYPE):
 
 if __name__ == "__main__":
     bot_builder.add_handler(CommandHandler("start", start))
-    print("start")
     bot_builder.add_handler(CommandHandler("upload", start_upload))
-    print("upload")
+    bot_builder.add_handler(CommandHandler("delete", start_delete))
     bot_builder.add_handler(MessageHandler(filters.Document.ALL, handle_document))
-    print("handle_document")
+    bot_builder.add_handler(CallbackQueryHandler(handle_delete_callback, pattern=r"^delete:"))
     bot_builder.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     uvicorn.run(app, host="0.0.0.0", port=int(os.environ['PORT']))
