@@ -46,7 +46,8 @@ class S3Bridge:
     def delete_from_s3(self, s3_bucket: str, user_id: str, file_name: str):
         try:
             self.client.delete_object(
-                s3_bucket, f"{user_id}/{file_name}"
+                Bucket=s3_bucket, 
+                Key=f"{user_id}/{file_name}"
             )
             logger.info(f"Файл {file_name} успешно удален из bucket {s3_bucket}.")
         except FileNotFoundError:

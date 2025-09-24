@@ -58,7 +58,12 @@ async def process_update(request: Request):
 # --- Handlers ---
 async def start(update: Update, _: ContextTypes.DEFAULT_TYPE):
     logger.info(f"Пользователь {update.message.from_user} вызвал команду /start")
-    await update.message.reply_text("Привет 👋 Я корпоративный ассистент. Напиши вопрос.")
+    await update.message.reply_text("Привет 👋 Я корпоративный ассистент.\
+                                    Доступные команды: \n \
+                                    /upload - загрузка файлов в ваше хранилище. \
+                                    На основе этих файлов модель будет отвечать на вопросы.\n \
+                                    /delete - удаление файлов из хранилища. \n\n \
+                                    Чтобы спросить что-то, просто напишите сообщение!")
 
 async def start_upload(update: Update, _: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
