@@ -115,6 +115,9 @@ jobs:
               if [ -n "$orchestrator_url" ]; then
                 deploy_cmd="$deploy_cmd --environment ORCHESTRATOR_URL=$orchestrator_url"
               fi
+              if [ -n "${container_urls[tgbot_service]}" ]; then
+                deploy_cmd="$deploy_cmd --environment WEBHOOK_URL=${container_urls[tgbot_service]}"
+              fi
               ;;
               
             "validator")
