@@ -50,7 +50,7 @@ jobs:
 
     - name: Deploy services
       run: |
-        SERVICES=("rag_service" "orchestrator" "tgbot_service" "validator" "yandexgpt_service")
+        SERVICES=("rag-service" "orchestrator" "tgbot-service" "validator" "yandexgpt-service")
         
         get_url() {
           local service=$1
