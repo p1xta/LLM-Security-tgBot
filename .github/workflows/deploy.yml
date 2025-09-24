@@ -32,20 +32,7 @@ jobs:
         username: oauth
         password: ${{ secrets.YC_OAUTH_TOKEN }}
 
-    - name: Build docker images
-      run: |
-        SERVICES=("rag_service" "orchestrator" "tgbot_service" "validator" "yandexgpt_service")
 
-        for service in "${SERVICES[@]}"; do
-            echo "Building $service..."
-            
-            cd $service
-            docker build -t cr.yandex/$REGISTRY_ID/$service:latest .
-            docker push cr.yandex/$REGISTRY_ID/$service:latest
-            cd ..
-
-            echo "✅ $service image built and pushed successfully"            
-        done
 
     - name: Get container URLs
       id: get-urls
@@ -53,9 +40,10 @@ jobs:
         SERVICES=("rag_service" "orchestrator" "tgbot_service" "validator" "yandexgpt_service")
 
         echo "Getting container URLs..."
-        
+
         for service in "${SERVICES[@]}"; do
-          url=$(yc serverless container get --folder-id ${{ secrets.YC_FOLDER_ID }} --name $servise --format json | jq -r '.url // empty')
+          container_name="${service}"
+          url=$(yc serverless container get --folder-id ${{ secrets.YC_FOLDER_ID }} --name $container_name --format json | jq -r '.url // empty')
           echo "URL for $service: $url"
           clean_url="${url%?}"
           echo "$service=$clean_url" >> $GITHUB_OUTPUT
