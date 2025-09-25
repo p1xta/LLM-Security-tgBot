@@ -121,7 +121,7 @@ async def handle_document(update: Update, _: ContextTypes.DEFAULT_TYPE):
     
     async with httpx.AsyncClient() as client:
         try:
-            if file.size > 30 * 1024 * 1024:
+            if file.file_size > 30 * 1024 * 1024:
                 logger.info(f"Попытка загрузить файл размером более 30 Мбайт")
                 raise Exception("Размер файла не должен превышать 30 Мбайт")
             iam_token = await get_iam_token_on_YC_vm(client)
