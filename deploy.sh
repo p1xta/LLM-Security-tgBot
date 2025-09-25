@@ -68,7 +68,8 @@ for service in "${SERVICES[@]}"; do
         --execution-timeout 3m \
         --cores 1 \
         --concurrency 4 \
-        --environment FOLDER_ID=$FOLDER_ID"
+        --environment FOLDER_ID=$FOLDER_ID \
+        --memory=512MB"
     
     case $service in
         "orchestrator")
