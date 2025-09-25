@@ -77,8 +77,8 @@ class YandexGPTBot:
                 "modelUri": f"gpt://{FOLDER_ID}/yandexgpt-lite",
                 "completionOptions": {
                     "stream": False,
-                    "temperature": 0.6,
-                    "maxTokens": 2000,
+                    "temperature": 0.2,
+                    "maxTokens": 5000,
                 },
                 "messages": [
                     {
