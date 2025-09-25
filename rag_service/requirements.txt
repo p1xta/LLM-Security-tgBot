@@ -1,0 +1,19 @@
+pydantic
+datetime
+fastapi
+faiss-cpu
+httpx
+requests
+PyJWT==2.10.1
+dotenv
+--find-links https://download.pytorch.org/whl/torch_stable.html
+torch==2.3.1+cpu
+transformers
+uvicorn
+langchain
+langchain_community
+boto3
+sentence-transformers
+pypdf
+python-multipart
+unstructured
