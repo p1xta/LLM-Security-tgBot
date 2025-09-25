@@ -34,7 +34,6 @@ bot_builder = (
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     logger.info("Запуск FastAPI приложения и установка WebHook")
-    await bot_builder.bot.setWebhook(url=WEBHOOK_DOMAIN)
     async with bot_builder:
         logger.info("Бот запущен")
         await bot_builder.start()
@@ -119,9 +118,12 @@ async def handle_document(update: Update, _: ContextTypes.DEFAULT_TYPE):
     await file.download_to_drive(file_path)
 
     logger.info(f"Пользователь {user_id} загрузил файл {document.file_name}")
-
+    
     async with httpx.AsyncClient() as client:
         try:
+            if file.size > 30 * 1024 * 1024:
+                logger.info(f"Попытка загрузить файл размером более 30 Мбайт")
+                raise Exception("Размер файла не должен превышать 30 Мбайт")
             iam_token = await get_iam_token_on_YC_vm(client)
             print(iam_token)
             with open(file_path, "rb") as f:
@@ -139,7 +141,7 @@ async def handle_document(update: Update, _: ContextTypes.DEFAULT_TYPE):
             reply = data.get("message", "⚠️ Ошибка обработки")
             logger.info(f"Ответ от оркестратора для {user_id}: {reply}")
         except Exception as e:
-            reply = f"❌ Сервис недоступен: {e}"
+            reply = f"❌ Ошибка: {e}"
             logger.error(f"Ошибка при загрузке файла от {user_id}: {e}")
 
     user_state.pop(user_id, None)

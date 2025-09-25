@@ -30,8 +30,6 @@ async def upload(
     file: UploadFile = File(...)
 ):
     try:
-        if file.size > 30 * 1024 * 1024:
-            raise HTTPException(status_code=400, detail="Размер файла не должен превышать 30 Мбайт")
         result = await RAGClient().upload(
             bucket=bucket,
             user_id=user_id,
