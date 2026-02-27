@@ -1,0 +1,112 @@
+import requests
+import time
+import jwt
+
+from .get_secrets import get_all_secrets_payload
+from log.logger import logger
+
+
+secrets_dict = get_all_secrets_payload()
+
+SERVICE_ACCOUNT_ID = secrets_dict["SERVICE_ACCOUNT_ID"]
+KEY_ID = secrets_dict["KEY_ID"]
+PRIVATE_KEY = secrets_dict["PRIVATE_KEY"]
+FOLDER_ID = secrets_dict["FOLDER_ID"]
+
+
+class YandexGPTBot:
+    def __init__(self):
+        self.iam_token = None
+        self.token_expires = 0
+
+    def get_iam_token(self):
+        """Получение IAM-токена (с кэшированием на 1 час)"""
+        if self.iam_token and time.time() < self.token_expires:
+            return self.iam_token
+
+        try:
+            now = int(time.time())
+            payload = {
+                "aud": "https://iam.api.cloud.yandex.net/iam/v1/tokens",
+                "iss": SERVICE_ACCOUNT_ID,
+                "iat": now,
+                "exp": now + 3600,
+            }
+            encoded_token = jwt.encode(
+                payload,
+                PRIVATE_KEY,
+                algorithm="PS256",
+                headers={"kid": KEY_ID},
+            )
+
+            response = requests.post(
+                "https://iam.api.cloud.yandex.net/iam/v1/tokens",
+                json={"jwt": encoded_token},
+                timeout=10,
+            )
+
+            if response.status_code != 200:
+                logger.error(f"Ошибка генерации токена: {response.text}")
+                raise Exception(f"Ошибка генерации токена: {response.text}")
+
+            token_data = response.json()
+            self.iam_token = token_data["iamToken"]
+            self.token_expires = (
+                now + 3500
+            )  # На 100 секунд меньше срока действия
+
+            logger.info("IAM токен успешно сгенерирован.")
+            return self.iam_token
+
+        except Exception as e:
+            logger.error(f"Ошибка генерации IAM токена: {str(e)}")
+            raise
+
+    def ask_gpt(self, user_prompt, sys_prompt):
+        """Запрос к Yandex GPT API"""
+        try:
+            iam_token = self.get_iam_token()
+
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {iam_token}",
+                "x-folder-id": FOLDER_ID,
+            }
+
+            data = {
+                "modelUri": f"gpt://{FOLDER_ID}/yandexgpt-lite",
+                "completionOptions": {
+                    "stream": False,
+                    "temperature": 0.2,
+                    "maxTokens": 5000,
+                },
+                "messages": [
+                    {
+                        "role": "system",
+                        "text": sys_prompt
+                    },
+                    {
+                        "role": "user", 
+                        "text": user_prompt
+                    }],
+            }
+
+            response = requests.post(
+                "https://llm.api.cloud.yandex.net/foundationModels/v1/completion",
+                headers=headers,
+                json=data,
+                timeout=30,
+            )
+
+            if response.status_code != 200:
+                logger.error(f"Ошибка в Yandex GPT API: {response.text}")
+                raise Exception(f"Ошибка API: {response.status_code}")
+
+            logger.info(f"Ответ Yandex GPT успешно сгенерирован.")
+            return response.json()["result"]["alternatives"][0]["message"][
+                "text"
+            ]
+
+        except Exception as e:
+            logger.error(f"Ошибка при ask_gpt: {str(e)}")
+            raise

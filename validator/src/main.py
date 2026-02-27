@@ -1,0 +1,24 @@
+import os
+from fastapi import FastAPI
+
+from api.routes import main_router as api_router
+from config.settings import get_settings
+
+
+def create_app() -> FastAPI:
+    settings = get_settings()
+    
+    app = FastAPI(
+        title="Validator Service",
+        version="1.0.0",
+        debug=settings.DEBUG
+    )
+    
+    app.include_router(api_router)
+    
+    return app
+
+if __name__ == "__main__":
+    import uvicorn
+    app = create_app()
+    uvicorn.run(app, host="0.0.0.0", port=int(os.environ['PORT']))
